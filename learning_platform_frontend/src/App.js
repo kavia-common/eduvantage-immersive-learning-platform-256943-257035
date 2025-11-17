@@ -4,6 +4,7 @@ import Layout from "./components/layout/Layout";
 import Loader from "./components/common/Loader";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import { routes as appRoutes } from "./routes";
+import { AuthProvider } from "./auth/AuthProvider";
 import "./App.css";
 
 /**
@@ -21,15 +22,17 @@ function App() {
   return (
     <BrowserRouter>
       <ErrorBoundary>
-        <Suspense fallback={<Loader />}>
-          <RoutedLayout>
-            <Routes>
-              {appRoutes.map((r) => (
-                <Route key={r.path} path={r.path} element={r.element} />
-              ))}
-            </Routes>
-          </RoutedLayout>
-        </Suspense>
+        <AuthProvider>
+          <Suspense fallback={<Loader />}>
+            <RoutedLayout>
+              <Routes>
+                {appRoutes.map((r) => (
+                  <Route key={r.path} path={r.path} element={r.element} />
+                ))}
+              </Routes>
+            </RoutedLayout>
+          </Suspense>
+        </AuthProvider>
       </ErrorBoundary>
     </BrowserRouter>
   );
