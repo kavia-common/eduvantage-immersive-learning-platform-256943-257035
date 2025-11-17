@@ -4,6 +4,14 @@
  * Environment configuration helper for CRA.
  * Reads values from process.env (must be prefixed with REACT_APP_).
  * No secrets are hardcoded here. Ensure .env is supplied by orchestrator.
+ *
+ * Exposed variables (with graceful fallbacks):
+ * - REACT_APP_API_BASE           -> env.API_BASE ("" for same-origin relative)
+ * - REACT_APP_WS_URL             -> env.WS_URL (auto-derived from location when missing)
+ * - REACT_APP_FEATURE_FLAGS      -> env.FEATURE_FLAGS ("" -> no flags)
+ * - REACT_APP_LOG_LEVEL          -> env.LOG_LEVEL ("info" default)
+ *
+ * Other supported vars are documented below.
  */
 
 // PUBLIC_INTERFACE
