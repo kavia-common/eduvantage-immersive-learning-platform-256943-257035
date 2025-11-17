@@ -3,6 +3,10 @@ import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import { Link } from "react-router-dom";
 
+/**
+ * PUBLIC_INTERFACE
+ * NotFound - 404 fallback page.
+ */
 export default function NotFound() {
   return (
     <div className="container">

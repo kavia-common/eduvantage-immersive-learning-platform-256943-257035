@@ -1,6 +1,10 @@
 import React from "react";
 import Card from "../components/common/Card";
 
+/**
+ * PUBLIC_INTERFACE
+ * Dashboard - authenticated overview module placeholder.
+ */
 export default function Dashboard() {
   return (
     <div className="container">

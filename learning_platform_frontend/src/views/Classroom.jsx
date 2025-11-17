@@ -1,6 +1,10 @@
 import React from "react";
 import Card from "../components/common/Card";
 
+/**
+ * PUBLIC_INTERFACE
+ * Classroom - authenticated immersive session module placeholder.
+ */
 export default function Classroom() {
   return (
     <div className="container">

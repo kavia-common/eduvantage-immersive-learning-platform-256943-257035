@@ -1,6 +1,10 @@
 import React from "react";
 import Card from "../components/common/Card";
 
+/**
+ * PUBLIC_INTERFACE
+ * Settings - authenticated settings module placeholder.
+ */
 export default function Settings() {
   return (
     <div className="container">

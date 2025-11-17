@@ -9,6 +9,7 @@ import "./App.css";
 
 /**
  * Wrapper to extract current route label for TopNav title via Layout prop.
+ * Ensures each route renders within the common Layout and theme styling.
  */
 function RoutedLayout({ children }) {
   const location = useLocation();
@@ -19,6 +20,12 @@ function RoutedLayout({ children }) {
 
 // PUBLIC_INTERFACE
 function App() {
+  /**
+   * Root application component.
+   * Renders the Router, wraps content with ErrorBoundary for safety,
+   * and provides authentication via AuthProvider. All routes render
+   * inside the shared Layout with Suspense fallback for lazy-loaded views.
+   */
   return (
     <BrowserRouter>
       <ErrorBoundary>

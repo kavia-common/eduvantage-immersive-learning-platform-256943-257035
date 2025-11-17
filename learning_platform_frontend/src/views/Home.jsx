@@ -5,6 +5,11 @@ import { logger } from "../services/logger";
 import { apiClient } from "../services/apiClient";
 import { isFeatureEnabled } from "../services/featureFlags";
 
+/**
+ * PUBLIC_INTERFACE
+ * Home page - public landing with calls-to-action.
+ * Uses common Card and Button components with theme-consistent styles.
+ */
 export default function Home() {
   const onGetStarted = async () => {
     logger.info("Get Started clicked");

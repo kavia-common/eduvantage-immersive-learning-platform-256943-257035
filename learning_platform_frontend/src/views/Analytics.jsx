@@ -1,6 +1,10 @@
 import React from "react";
 import Card from "../components/common/Card";
 
+/**
+ * PUBLIC_INTERFACE
+ * Analytics - authenticated analytics module placeholder.
+ */
 export default function Analytics() {
   return (
     <div className="container">

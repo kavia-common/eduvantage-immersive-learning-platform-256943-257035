@@ -1,6 +1,10 @@
 import React from "react";
 import Card from "../components/common/Card";
 
+/**
+ * PUBLIC_INTERFACE
+ * Profile - authenticated user profile module placeholder.
+ */
 export default function Profile() {
   return (
     <div className="container">
