@@ -1,48 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { Suspense } from "react";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import Layout from "./components/layout/Layout";
+import Loader from "./components/common/Loader";
+import ErrorBoundary from "./components/common/ErrorBoundary";
+import { routes as appRoutes } from "./routes";
+import "./App.css";
+
+/**
+ * Wrapper to extract current route label for TopNav title via Layout prop.
+ */
+function RoutedLayout({ children }) {
+  const location = useLocation();
+  const match = appRoutes.find((r) => r.path === location.pathname);
+  const title = match?.label || "EduVantage";
+  return <Layout pageTitle={title}>{children}</Layout>;
+}
 
 // PUBLIC_INTERFACE
 function App() {
-  const [theme, setTheme] = useState('light');
-
-  // Effect to apply theme to document element
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
-  // PUBLIC_INTERFACE
-  const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
-  };
-
   return (
-    <div className="App">
-      <header className="App-header">
-        <button 
-          className="theme-toggle" 
-          onClick={toggleTheme}
-          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-        >
-          {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
-        </button>
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <p>
-          Current theme: <strong>{theme}</strong>
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <BrowserRouter>
+      <ErrorBoundary>
+        <Suspense fallback={<Loader />}>
+          <RoutedLayout>
+            <Routes>
+              {appRoutes.map((r) => (
+                <Route key={r.path} path={r.path} element={r.element} />
+              ))}
+            </Routes>
+          </RoutedLayout>
+        </Suspense>
+      </ErrorBoundary>
+    </BrowserRouter>
   );
 }
 

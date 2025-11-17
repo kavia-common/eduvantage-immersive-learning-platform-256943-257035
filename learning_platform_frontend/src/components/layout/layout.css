@@ -1,0 +1,39 @@
+@import '../../styles/variables.css';
+
+.lp-layout {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-body {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.lp-layout.collapsed .lp-body {
+  grid-template-columns: 72px 1fr;
+}
+
+.lp-content {
+  min-height: calc(100vh - var(--topnav-height) - 2rem);
+}
+
+.content-inner {
+  padding: 1rem;
+  background: var(--color-background);
+  border-radius: var(--radius-lg);
+}
+
+@media (max-width: 900px) {
+  .lp-body {
+    grid-template-columns: 1fr;
+    padding: .5rem;
+  }
+  .lp-content {
+    padding-top: calc(var(--topnav-height));
+  }
+}
