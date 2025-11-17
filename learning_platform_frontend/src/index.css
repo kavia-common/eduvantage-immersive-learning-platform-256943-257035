@@ -1,5 +1,6 @@
 @import './styles/theme.css';
 @import './styles/utilities.css';
+@import './components/assistant/assistant.css';
 
 :root {
   /* allow smooth theme transitions */

@@ -1,0 +1,12 @@
+@import '../../styles/variables.css';
+
+.assistant-panel {
+  background: var(--color-surface);
+}
+
+.chat-message {
+  transition: transform var(--transition-soft);
+}
+.chat-message:hover {
+  transform: translateY(-1px);
+}

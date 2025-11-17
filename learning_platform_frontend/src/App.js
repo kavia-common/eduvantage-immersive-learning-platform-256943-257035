@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/common/ErrorBoundary";
 import { routes as appRoutes } from "./routes";
 import { AuthProvider } from "./auth/AuthProvider";
 import "./App.css";
+import { AssistantProvider } from "./state/assistantContext";
 
 /**
  * Wrapper to extract current route label for TopNav title via Layout prop.
@@ -31,13 +32,15 @@ function App() {
       <ErrorBoundary>
         <AuthProvider>
           <Suspense fallback={<Loader />}>
-            <RoutedLayout>
-              <Routes>
-                {appRoutes.map((r) => (
-                  <Route key={r.path} path={r.path} element={r.element} />
-                ))}
-              </Routes>
-            </RoutedLayout>
+            <AssistantProvider>
+              <RoutedLayout>
+                <Routes>
+                  {appRoutes.map((r) => (
+                    <Route key={r.path} path={r.path} element={r.element} />
+                  ))}
+                </Routes>
+              </RoutedLayout>
+            </AssistantProvider>
           </Suspense>
         </AuthProvider>
       </ErrorBoundary>
