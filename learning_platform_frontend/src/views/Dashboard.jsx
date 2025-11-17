@@ -20,19 +20,35 @@ export default function Dashboard() {
 
         <AssistantPanel defaultOpen />
 
-        <Card>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <div>
-              <h3 className="mt-0">Social Feed</h3>
-              <p className="mt-2" style={{ color: "var(--color-muted)" }}>
-                Share progress, ask questions, and celebrate wins with peers.
-              </p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <Card>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div>
+                <h3 className="mt-0">Social Feed</h3>
+                <p className="mt-2" style={{ color: "var(--color-muted)" }}>
+                  Share progress, ask questions, and celebrate wins with peers.
+                </p>
+              </div>
+              <div style={{ marginLeft: "auto" }}>
+                <Link to="/feed"><button className="btn">Open Feed</button></Link>
+              </div>
             </div>
-            <div style={{ marginLeft: "auto" }}>
-              <Link to="/feed"><button className="btn">Open Feed</button></Link>
+          </Card>
+
+          <Card>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div>
+                <h3 className="mt-0">Wellbeing</h3>
+                <p className="mt-2" style={{ color: "var(--color-muted)" }}>
+                  Log your daily mood and view trends over time.
+                </p>
+              </div>
+              <div style={{ marginLeft: "auto" }}>
+                <Link to="/wellbeing"><button className="btn">Open Wellbeing</button></Link>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       </div>
     </div>
   );
