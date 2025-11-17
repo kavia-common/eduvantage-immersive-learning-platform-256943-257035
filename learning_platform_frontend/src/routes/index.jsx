@@ -17,6 +17,7 @@ const NotFound = lazy(() => import("../views/NotFound"));
 const Login = lazy(() => import("../views/Login"));
 const Signup = lazy(() => import("../views/Signup"));
 const OAuthCallback = lazy(() => import("../views/OAuthCallback"));
+const FeedView = lazy(() => import("../views/Feed"));
 
 /**
  * PUBLIC_INTERFACE
@@ -58,6 +59,16 @@ export const routes = [
     ),
     label: "Analytics",
     icon: "📈",
+  },
+  {
+    path: "/feed",
+    element: (
+      <ProtectedRoute>
+        <FeedView />
+      </ProtectedRoute>
+    ),
+    label: "Feed",
+    icon: "📰",
   },
   {
     path: "/profile",

@@ -1,6 +1,7 @@
 import React from "react";
 import Card from "../components/common/Card";
 import AssistantPanel from "../components/assistant/AssistantPanel";
+import { Link } from "react-router-dom";
 
 /**
  * PUBLIC_INTERFACE
@@ -18,6 +19,20 @@ export default function Dashboard() {
         </Card>
 
         <AssistantPanel defaultOpen />
+
+        <Card>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div>
+              <h3 className="mt-0">Social Feed</h3>
+              <p className="mt-2" style={{ color: "var(--color-muted)" }}>
+                Share progress, ask questions, and celebrate wins with peers.
+              </p>
+            </div>
+            <div style={{ marginLeft: "auto" }}>
+              <Link to="/feed"><button className="btn">Open Feed</button></Link>
+            </div>
+          </div>
+        </Card>
       </div>
     </div>
   );
