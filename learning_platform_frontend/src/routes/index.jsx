@@ -19,6 +19,7 @@ const Signup = lazy(() => import("../views/Signup"));
 const OAuthCallback = lazy(() => import("../views/OAuthCallback"));
 const FeedView = lazy(() => import("../views/Feed"));
 const Wellbeing = lazy(() => import("../views/Wellbeing"));
+const Career = lazy(() => import("../views/Career"));
 
 /**
  * PUBLIC_INTERFACE
@@ -100,6 +101,16 @@ export const routes = [
     ),
     label: "Wellbeing",
     icon: "🧠",
+  },
+  {
+    path: "/career",
+    element: (
+      <ProtectedRoute>
+        <Career />
+      </ProtectedRoute>
+    ),
+    label: "Career",
+    icon: "🧭",
   },
 
   // Auth routes (not in sidebar)

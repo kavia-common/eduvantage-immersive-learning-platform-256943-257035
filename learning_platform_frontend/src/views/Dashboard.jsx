@@ -48,6 +48,20 @@ export default function Dashboard() {
               </div>
             </div>
           </Card>
+
+          <Card>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div>
+                <h3 className="mt-0">Career Path AI</h3>
+                <p className="mt-2" style={{ color: "var(--color-muted)" }}>
+                  Generate tailored career recommendations from your goals and interests.
+                </p>
+              </div>
+              <div style={{ marginLeft: "auto" }}>
+                <Link to="/career"><button className="btn">Open Career</button></Link>
+              </div>
+            </div>
+          </Card>
         </div>
       </div>
     </div>
