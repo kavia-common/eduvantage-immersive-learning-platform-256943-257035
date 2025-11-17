@@ -9,6 +9,7 @@ import Button from "../common/Button";
  * Feed - renders the social feed with optimistic updates.
  * Uses FeedProvider higher up to supply state/actions.
  */
+// PUBLIC_INTERFACE
 export default function Feed() {
   const { posts, loading, error, createPost, addComment, toggleReaction, loadFeed } = useFeed();
 

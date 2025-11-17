@@ -47,6 +47,7 @@ import { logger } from "../services/logger";
  * - Supabase Realtime placeholder subscription commented for future schema.
  */
 
+// PUBLIC_INTERFACE
 export const FeedContext = createContext({
   posts: [],
   loading: true,

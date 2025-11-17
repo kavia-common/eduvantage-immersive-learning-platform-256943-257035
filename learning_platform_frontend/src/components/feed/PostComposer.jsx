@@ -7,6 +7,7 @@ import Button from "../common/Button";
  * Props:
  * - onSubmit: (text: string) => Promise<void>|void
  */
+// PUBLIC_INTERFACE
 export default function PostComposer({ onSubmit }) {
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);

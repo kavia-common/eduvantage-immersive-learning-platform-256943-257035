@@ -6,6 +6,7 @@ import Feed from "../components/feed/Feed";
  * PUBLIC_INTERFACE
  * FeedView - protected social feed page using FeedProvider.
  */
+// PUBLIC_INTERFACE
 export default function FeedView() {
   return (
     <div className="container">

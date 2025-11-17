@@ -8,6 +8,7 @@ import Button from "../common/Button";
  * - comments: Array<{id, author:{name}, content, createdAt, _optimistic?}>
  * - onAdd: (text: string) => Promise<void>|void
  */
+// PUBLIC_INTERFACE
 export default function Comments({ comments = [], onAdd }) {
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
