@@ -1,19 +1,18 @@
 import React from "react";
-import Card from "../components/common/Card";
+import { AnalyticsProvider } from "../state/analyticsSlice";
+import AnalyticsDashboard from "../components/analytics/AnalyticsDashboard";
 
 /**
  * PUBLIC_INTERFACE
- * Analytics - authenticated analytics module placeholder.
+ * Analytics - authenticated analytics module with mock charts and realtime placeholders.
+ * Wraps AnalyticsDashboard with AnalyticsProvider to supply state slice.
  */
 export default function Analytics() {
   return (
     <div className="container">
-      <Card>
-        <h2>Analytics</h2>
-        <p className="mt-2" style={{ color: "var(--color-muted)" }}>
-          Track performance with rich insights and trends.
-        </p>
-      </Card>
+      <AnalyticsProvider>
+        <AnalyticsDashboard />
+      </AnalyticsProvider>
     </div>
   );
 }
