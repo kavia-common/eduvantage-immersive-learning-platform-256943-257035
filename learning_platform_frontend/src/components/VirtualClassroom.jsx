@@ -1,22 +1,26 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './virtualClassroom.css';
 
 /**
  * PUBLIC_INTERFACE
  * VirtualClassroom
- * A glass-styled placeholder classroom component with:
- * - Connection toggle (Join/Leave)
- * - Participants list (mock) with count
- * - Basic controls (Camera/Mic toggle - UI only)
- * - Responsive seats grid preview when connected
+ * A glass-styled virtual classroom preview component with:
+ * - Join/Leave
+ * - Media capture via getUserMedia behind user gesture
+ * - Clear UI states: insecure context, permission denied, no device, generic error, and success
+ * - Cleanup of MediaStream tracks on unmount or when toggling off
  *
  * Props:
  * - embedded?: boolean — if true, renders a compact header suited for dashboard panels
  */
 function VirtualClassroom({ embedded = false }) {
   const [isConnected, setIsConnected] = useState(false);
-  const [cameraOn, setCameraOn] = useState(true);
-  const [micOn, setMicOn] = useState(true);
+  const [cameraOn, setCameraOn] = useState(false);
+  const [micOn, setMicOn] = useState(false);
+  const [status, setStatus] = useState('idle'); // idle | requesting | insecure | denied | nodevice | error | ready
+  const [message, setMessage] = useState('');
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
 
   // Simple mock participants list (could later be lifted via props or context)
   const participants = useMemo(
@@ -26,13 +30,138 @@ function VirtualClassroom({ embedded = false }) {
 
   const participantCount = participants.length;
 
-  const handleJoin = () => {
-    setIsConnected(true);
+  // Helpers
+  const isSecure = () => {
+    // Secure contexts are required for getUserMedia except for localhost
+    return window.isSecureContext || window.location.hostname === 'localhost';
+  };
+
+  const stopStream = () => {
+    try {
+      streamRef.current?.getTracks()?.forEach((t) => {
+        try { t.stop(); } catch {}
+      });
+    } catch {}
+    streamRef.current = null;
+    if (videoRef.current) {
+      try { videoRef.current.srcObject = null; } catch {}
+    }
+  };
+
+  useEffect(() => {
+    // Cleanup on unmount
+    return () => {
+      stopStream();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const requestMedia = async () => {
+    setMessage('');
+    if (!isSecure()) {
+      setStatus('insecure');
+      setMessage('Camera requires HTTPS (or localhost). Open the site over a secure connection.');
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setStatus('error');
+      setMessage('Media devices API is not supported in this browser.');
+      return;
+    }
+
+    setStatus('requesting');
+    try {
+      // Request both audio and video, but we will allow toggling enabled state
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 360 },
+        audio: true,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      // Enable tracks according to toggles
+      const v = stream.getVideoTracks()[0];
+      const a = stream.getAudioTracks()[0];
+      if (v) v.enabled = true;
+      if (a) a.enabled = true;
+
+      setCameraOn(!!v);
+      setMicOn(!!a);
+      setStatus('ready');
+      setIsConnected(true);
+    } catch (err) {
+      const name = err && (err.name || err.code);
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        setStatus('denied');
+        setMessage('Camera/Microphone permission was denied. Please allow access in browser settings.');
+      } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError' || name === 'OverconstrainedError') {
+        setStatus('nodevice');
+        setMessage('No suitable camera or microphone was found.');
+      } else if (name === 'NotReadableError') {
+        setStatus('error');
+        setMessage('Another application may be using the camera/microphone.');
+      } else {
+        setStatus('error');
+        setMessage(err?.message || 'Failed to access media devices.');
+      }
+      stopStream();
+      setIsConnected(false);
+    }
+  };
+
+  const handleJoin = async () => {
+    await requestMedia();
   };
 
   const handleLeave = () => {
     setIsConnected(false);
+    setStatus('idle');
+    setMessage('');
+    setCameraOn(false);
+    setMicOn(false);
+    stopStream();
   };
+
+  const handleToggleCamera = () => {
+    const v = streamRef.current?.getVideoTracks?.()[0];
+    if (v) {
+      const next = !v.enabled;
+      v.enabled = next;
+      setCameraOn(next);
+    }
+  };
+
+  const handleToggleMic = () => {
+    const a = streamRef.current?.getAudioTracks?.()[0];
+    if (a) {
+      const next = !a.enabled;
+      a.enabled = next;
+      setMicOn(next);
+    }
+  };
+
+  // Build hint message based on status
+  const hint = (() => {
+    switch (status) {
+      case 'idle':
+        return 'Click Join to enable your camera preview.';
+      case 'requesting':
+        return 'Requesting camera/mic permission...';
+      case 'insecure':
+        return 'Insecure context: open over HTTPS or use localhost for camera access.';
+      case 'denied':
+        return 'Permissions denied: allow access in your browser settings.';
+      case 'nodevice':
+        return 'No camera/microphone found.';
+      case 'error':
+        return message || 'An error occurred while accessing media.';
+      case 'ready':
+        return 'Camera preview active.';
+      default:
+        return '';
+    }
+  })();
 
   return (
     <div className={`vc-container glass ${embedded ? 'vc-embedded' : ''}`} role="region" aria-label="Virtual Classroom section">
@@ -90,13 +219,33 @@ function VirtualClassroom({ embedded = false }) {
         <main className="vc-stage glass-sm">
           {!isConnected ? (
             <div className="vc-disconnected" aria-label="classroom disconnected placeholder">
-              <p className="vc-helper-text">Connect to preview classroom seating and controls.</p>
+              <p className="vc-helper-text">{hint}</p>
+              {status === 'insecure' && (
+                <p className="vc-helper-text" role="note">
+                  Tip: Use https:// or run locally on http://localhost to test camera.
+                </p>
+              )}
+              {(status === 'denied' || status === 'nodevice' || status === 'error') && message && (
+                <p className="vc-helper-text" role="alert">{message}</p>
+              )}
             </div>
           ) : (
             <div className="vc-connected" aria-label="classroom connected preview">
               <div className="vc-grid" role="grid" aria-label="Seating grid">
-                {Array.from({ length: 9 }).map((_, i) => (
-                  <div role="gridcell" className="vc-seat" key={i} aria-label={`Seat ${i + 1}`}>
+                {/* First tile shows actual camera preview */}
+                <div role="gridcell" className="vc-seat" aria-label="Your seat video">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10, background: '#000' }}
+                    aria-label="Local camera preview"
+                  />
+                </div>
+                {/* Remaining tiles remain placeholders to imply layout */}
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div role="gridcell" className="vc-seat" key={i} aria-label={`Seat ${i + 2}`}>
                     <div className="vc-seat-video-sim" />
                   </div>
                 ))}
@@ -110,25 +259,25 @@ function VirtualClassroom({ embedded = false }) {
         <div className="vc-controls-group" role="group" aria-label="Media controls">
           <button
             className={`vc-icon-btn ${cameraOn ? '' : 'off'}`}
-            onClick={() => setCameraOn((v) => !v)}
-            aria-label="Toggle camera"
+            onClick={handleToggleCamera}
+            aria-label={cameraOn ? 'Turn camera off' : 'Turn camera on'}
             title="Toggle camera"
+            disabled={!isConnected || status !== 'ready'}
           >
             {cameraOn ? '📷' : '🚫📷'}
           </button>
           <button
             className={`vc-icon-btn ${micOn ? '' : 'off'}`}
-            onClick={() => setMicOn((v) => !v)}
-            aria-label="Toggle microphone"
+            onClick={handleToggleMic}
+            aria-label={micOn ? 'Mute microphone' : 'Unmute microphone'}
             title="Toggle microphone"
+            disabled={!isConnected || status !== 'ready'}
           >
             {micOn ? '🎙️' : '🔇'}
           </button>
         </div>
         <div className="vc-hint" aria-live="polite">
-          {isConnected
-            ? 'Preview mode: media is not being captured.'
-            : 'Join to preview seating layout.'}
+          {hint}
         </div>
       </footer>
     </div>
