@@ -45,7 +45,7 @@ export default function Signup() {
       <Card>
         <h2>Create your account</h2>
         <p className="mt-2" style={{ color: "var(--color-muted)" }}>
-          Join EduVantage and start your immersive learning journey.
+          Join DIGITALT3 and start your immersive learning journey.
         </p>
 
         {(error || localError) && (

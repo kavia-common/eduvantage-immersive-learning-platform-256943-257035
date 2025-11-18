@@ -52,7 +52,7 @@ export default function Login() {
       <Card>
         <h2>Login</h2>
         <p className="mt-2" style={{ color: "var(--color-muted)" }}>
-          Access your EduVantage account.
+          Access your DIGITALT3 account.
         </p>
 
         {(error || localError) && (
