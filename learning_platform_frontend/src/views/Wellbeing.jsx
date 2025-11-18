@@ -2,6 +2,7 @@ import React from "react";
 import { WellbeingProvider } from "../state/wellbeingSlice";
 import MoodCheck from "../components/wellbeing/MoodCheck";
 import WellbeingPanel from "../components/wellbeing/WellbeingPanel";
+import WellbeingDashboard from "../components/wellbeing/WellbeingDashboard";
 
 /**
  * PUBLIC_INTERFACE
@@ -15,6 +16,7 @@ export default function Wellbeing() {
         <div className="mt-0" style={{ display: "grid", gap: "1rem" }}>
           <MoodCheck />
           <WellbeingPanel />
+          <WellbeingDashboard />
         </div>
       </WellbeingProvider>
     </div>

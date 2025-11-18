@@ -1,0 +1,173 @@
+.wellbeing-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-radius: 16px;
+  padding: 1rem;
+  /* Glass utility expected in styles/utilities.css, ensure compatibility */
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+}
+
+.wb-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.wb-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.wb-subtitle {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.wb-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.wb-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.wb-section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.wb-emoji-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.wb-emoji-btn {
+  font-size: 1.35rem;
+  line-height: 1;
+  padding: 0.5rem 0.6rem;
+  border-radius: 12px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  background: rgba(255, 255, 255, 0.6);
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, border-color 120ms ease;
+  cursor: pointer;
+}
+.wb-emoji-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 14px rgba(37, 99, 235, 0.12);
+  background: rgba(255, 255, 255, 0.85);
+}
+.wb-emoji-btn.active {
+  border-color: #2563EB;
+  background: linear-gradient(180deg, rgba(37,99,235,0.10), rgba(255,255,255,0.75));
+}
+
+.wb-notes {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  padding: 0.75rem 0.9rem;
+  resize: vertical;
+  min-height: 70px;
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  color: #111827;
+}
+.wb-notes:focus {
+  outline: 2px solid #2563EB;
+  outline-offset: 2px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.wb-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.wb-save-btn {
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  background: linear-gradient(180deg, rgba(37,99,235,0.12), rgba(255,255,255,0.9));
+  color: #111827;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+.wb-save-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 14px rgba(37, 99, 235, 0.18);
+}
+.wb-save-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.wb-saved-hint {
+  font-size: 0.85rem;
+  color: #374151;
+}
+
+.wb-chart {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  align-items: end;
+  gap: 0.5rem;
+  height: 140px;
+  padding: 0.25rem 0.25rem 0.5rem 0.25rem;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(37,99,235,0.05), rgba(255,255,255,0.9));
+  border: 1px solid rgba(17,24,39,0.08);
+}
+
+.wb-bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  height: 100%;
+}
+
+.wb-bar {
+  width: 100%;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #2563EB, #60A5FA);
+  box-shadow: 0 6px 12px rgba(37, 99, 235, 0.18);
+  min-height: 8%;
+}
+
+.wb-bar-label {
+  font-size: 0.8rem;
+  color: #374151;
+}
+
+/* Screen reader only, utility */
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+
+/* Responsive tweaks */
+@media (min-width: 768px) {
+  .wellbeing-dashboard {
+    padding: 1.25rem;
+  }
+}

@@ -56,3 +56,29 @@ Dashboard includes:
 Accessibility:
 - Action buttons include accessible labels and titles
 - Semantic article/header sections
+
+---
+
+## Wellbeing Dashboard (Mood Tracker)
+
+A glass-styled WellbeingDashboard component provides:
+- Emoji mood input (1–5)
+- Optional notes textarea
+- Save button (non-persistent stub)
+- Simple weekly mood trend chart
+
+Usage:
+```jsx
+import WellbeingDashboard from 'src/components/wellbeing/WellbeingDashboard';
+
+<WellbeingDashboard />
+```
+
+Integration:
+- Appears as a panel within the Dashboard view (Wellbeing section with an Open link)
+- Available as a dedicated route at /wellbeing where it is rendered with MoodCheck and WellbeingPanel
+
+Notes:
+- Save action is a stub; wire up to Redux/store or API in future iterations.
+- Component follows accessibility best-practices (aria-labels, focus states).
+- Styling aligns with Ocean Professional theme and glass utilities.

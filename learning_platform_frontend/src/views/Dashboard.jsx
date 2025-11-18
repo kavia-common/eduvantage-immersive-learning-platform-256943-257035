@@ -5,6 +5,7 @@ import Button from "../components/common/Button";
 import AssistantPanel from "../components/assistant/AssistantPanel";
 import LearningAssistant from "../components/assistant/LearningAssistant";
 import VirtualClassroom from "../components/VirtualClassroom";
+import WellbeingDashboard from "../components/wellbeing/WellbeingDashboard";
 
 /**
  * PUBLIC_INTERFACE
@@ -228,6 +229,19 @@ export default function Dashboard() {
             emoji="🧭"
           />
         </div>
+      </section>
+
+      {/* Wellbeing quick panel on dashboard */}
+      <section className="mt-3" aria-label="Wellbeing dashboard panel">
+        <Card variant="glass" style={{ padding: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", marginBottom: "0.5rem" }}>
+            <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Wellbeing</h2>
+            <Link to="/wellbeing" aria-label="Open full wellbeing view" title="Open full wellbeing view">
+              <Button variant="glass" className="is-interactive">Open</Button>
+            </Link>
+          </div>
+          <WellbeingDashboard />
+        </Card>
       </section>
 
       {/* Inline Social Feed preview panel */}
