@@ -1,4 +1,4 @@
-/* Spacing utilities */
+ /* Spacing utilities */
 .mt-1 { margin-top: 0.25rem; }
 .mt-2 { margin-top: 0.5rem; }
 .mt-3 { margin-top: 1rem; }
@@ -18,4 +18,75 @@
 .hide-sm { display: none; }
 @media (min-width: 768px) {
   .hide-sm { display: initial; }
+}
+
+/* Glassmorphism Utilities
+   Ocean Professional theme alignment using CSS variables from variables.css and theme.css.
+   These classes provide a semi-transparent, blurred surface with subtle borders and shadows.
+*/
+.glass {
+  /* Colors derived from theme tokens to avoid hardcoding */
+  --glass-surface: var(--color-surface, #ffffff);
+  --glass-primary: var(--color-primary, #2563EB);
+  --glass-bg: color-mix(in oklab, var(--glass-surface) 78%, transparent);
+  --glass-border: color-mix(in oklab, var(--glass-primary) 12%, var(--glass-surface) 88%);
+  --glass-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(0,0,0,0.06);
+
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--glass-primary) 10%, transparent) 0%,
+    color-mix(in oklab, var(--glass-surface) 90%, transparent) 100%
+  );
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  backdrop-filter: blur(12px) saturate(120%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-lg, 14px);
+}
+
+.glass-dark {
+  --glass-dark-surface: var(--color-background, #0b1220);
+  --glass-accent: var(--color-secondary, #F59E0B);
+  --glass-bg-dark: color-mix(in oklab, var(--glass-dark-surface) 72%, transparent);
+  --glass-border-dark: color-mix(in oklab, var(--glass-accent) 18%, var(--glass-dark-surface) 82%);
+  --glass-shadow-dark: 0 1px 2px rgba(0,0,0,0.24), 0 10px 28px rgba(0,0,0,0.32);
+
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--color-primary, #2563EB) 16%, transparent) 0%,
+    color-mix(in oklab, var(--glass-dark-surface) 84%, transparent) 100%
+  );
+  background-color: var(--glass-bg-dark);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  backdrop-filter: blur(14px) saturate(120%);
+  border: 1px solid var(--glass-border-dark);
+  box-shadow: var(--glass-shadow-dark);
+  border-radius: var(--radius-lg, 14px);
+}
+
+/* Optional size helpers for glass blocks */
+.glass-sm { border-radius: var(--radius-md, 12px); }
+.glass-lg { border-radius: calc(var(--radius-lg, 16px) + 4px); }
+
+/* Subtle divider on glass surfaces */
+.glass-divider {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in oklab, var(--color-primary, #2563EB) 14%, #ffffff 86%),
+    transparent
+  );
+  opacity: 0.7;
+}
+
+/* Hover/interactive states tuned for buttons/cards */
+.is-interactive.glass:hover {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08), 0 12px 28px rgba(0,0,0,0.10);
+  transform: translateY(-1px);
+  transition: box-shadow 180ms ease, transform 180ms ease;
+}
+.is-interactive.glass-dark:hover {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.32), 0 16px 36px rgba(0,0,0,0.40);
+  transform: translateY(-1px);
+  transition: box-shadow 180ms ease, transform 180ms ease;
 }

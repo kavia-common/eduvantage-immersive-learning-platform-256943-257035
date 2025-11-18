@@ -10,10 +10,6 @@ import { isFeatureEnabled } from "../services/featureFlags";
  * PUBLIC_INTERFACE
  * Home page - public landing with calls-to-action.
  * Uses common Card and Button components with theme-consistent styles.
- *
- * Get Started -> navigates to /signup if unauthenticated experience is desired,
- * or /dashboard if choosing to show app preview right away. For now, route to /signup.
- * Explore -> navigates to /dashboard if feature flag exploreV2 is enabled, else to /feed.
  */
 export default function Home() {
   const navigate = useNavigate();
@@ -29,7 +25,6 @@ export default function Home() {
       // ignore
     }
 
-    // Primary CTA should take the user into the intended flow
     navigate("/signup");
   };
 
@@ -37,14 +32,12 @@ export default function Home() {
     e?.preventDefault?.();
     const enabled = isFeatureEnabled("exploreV2");
     logger.debug("Explore feature flag", { enabled });
-
-    // If the new explore is enabled, go to dashboard; otherwise, route to feed as a public preview
     navigate(enabled ? "/dashboard" : "/feed");
   };
 
   return (
     <div className="container">
-      <Card>
+      <Card variant="glass">
         <h1>Welcome to EduVantage</h1>
         <p className="mt-2" style={{ color: "var(--color-muted)" }}>
           Immersive, AI-powered learning with a modern, responsive UI.
@@ -54,7 +47,7 @@ export default function Home() {
             Get Started
           </Button>
           <Button
-            variant="secondary"
+            variant="glass"
             className="ml-2"
             style={{ marginLeft: ".5rem" }}
             onClick={onExplore}

@@ -20,6 +20,7 @@ const OAuthCallback = lazy(() => import("../views/OAuthCallback"));
 const FeedView = lazy(() => import("../views/Feed"));
 const Wellbeing = lazy(() => import("../views/Wellbeing"));
 const Career = lazy(() => import("../views/Career"));
+const StylePreview = lazy(() => import("../views/StylePreview"));
 
 /**
  * PUBLIC_INTERFACE
@@ -113,6 +114,9 @@ export const routes = [
     icon: "🧭",
   },
 
+  // Utility preview route (not in sidebar)
+  { path: "/style-preview", element: <StylePreview />, label: "Style Preview" },
+
   // Auth routes (not in sidebar)
   { path: "/login", element: <Login />, label: "Login" },
   { path: "/signup", element: <Signup />, label: "Signup" },
@@ -128,5 +132,5 @@ export const routes = [
  * Filtered routes used in the sidebar navigation (excludes auth/utility routes).
  */
 export const navRoutes = routes.filter(
-  (r) => r.label && r.path && !["/home", "*", "/login", "/signup", "/auth/callback"].includes(r.path)
+  (r) => r.label && r.path && !["/home", "*", "/login", "/signup", "/auth/callback", "/style-preview"].includes(r.path)
 );

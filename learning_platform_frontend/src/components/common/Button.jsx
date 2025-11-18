@@ -1,15 +1,19 @@
 import React from "react";
+import "../../styles/theme.css";
+import "../../styles/utilities.css";
 
 /**
- * Button component using theme variables.
- * Variant: primary (default) | secondary | ghost
- *
  * PUBLIC_INTERFACE
- * - Forwards all native button props including onClick, disabled, aria-*.
- * - Defaults to type="button" to prevent accidental form submissions.
+ * Button component using theme variables.
+ * Variants:
+ * - primary (default)
+ * - secondary
+ * - ghost
+ * - glass (light glass surface)
+ * - glassDark (dark glass surface)
+ *
+ * Forwards all native button props; defaults to type="button".
  */
-
-// PUBLIC_INTERFACE
 export default function Button({
   children,
   variant = "primary",
@@ -20,6 +24,9 @@ export default function Button({
   const classes = ["btn"];
   if (variant === "secondary") classes.push("secondary");
   if (variant === "ghost") classes.push("ghost");
+  if (variant === "glass") classes.push("glass", "is-interactive");
+  if (variant === "glassDark") classes.push("glass-dark", "is-interactive");
+
   return (
     <button type={type} className={`${classes.join(" ")} ${className}`} {...props}>
       {children}

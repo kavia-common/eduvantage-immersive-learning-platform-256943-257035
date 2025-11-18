@@ -1,4 +1,4 @@
-/* Keep legacy styles minimal; main theme in styles/ */
+ /* Keep legacy styles minimal; main theme in styles/ */
 .App { text-align: left; }
 .App-header { display: contents; }
 .App-logo { display: none; }
@@ -9,4 +9,19 @@
 @keyframes App-logo-spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+/* Feature tile sample baseline (if used in legacy pages) */
+.feature-tile {
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, rgba(0,0,0,0.06));
+}
+
+/* Allow glass to override surface styles gracefully */
+.feature-tile.glass,
+.feature-tile.glass-dark {
+  background: unset;
+  border: unset;
 }
