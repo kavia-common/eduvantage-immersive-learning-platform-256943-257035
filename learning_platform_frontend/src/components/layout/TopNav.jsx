@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./topnav.css";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
 import Button from "../common/Button";
 
@@ -33,6 +34,9 @@ export default function TopNav({ title = "Home", onMenu }) {
       <button className="menu-btn" onClick={onMenu} aria-label="Toggle navigation">☰</button>
       <div className="title">{title}</div>
       <div className="actions">
+        <Link to="/courses" className="nav-link" aria-label="Courses" style={{ marginRight: ".5rem" }}>
+          Courses
+        </Link>
         <Button variant="purple" onClick={toggleTheme} aria-label="Toggle theme">
           {theme === "light" ? "🌙 Dark" : "☀️ Light"}
         </Button>

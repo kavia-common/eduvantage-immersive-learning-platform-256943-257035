@@ -131,6 +131,26 @@
   box-shadow: 0 10px 24px rgba(59, 130, 246, 0.34);
 }
 
+/* Map btn variants used by Button.jsx to utilities */
+.btn { border: none; cursor: pointer; }
+.btn-sm { padding: 0.375rem 0.625rem; border-radius: 8px; font-size: 0.85rem; }
+.btn-md { padding: 0.5rem 0.875rem; border-radius: 10px; }
+.btn-lg { padding: 0.75rem 1rem; border-radius: 12px; font-weight: 600; }
+.btn-xl { padding: 0.9rem 1.1rem; border-radius: 14px; font-weight: 600; }
+
+.btn-gradient-primary { background-image: linear-gradient(135deg, #3b82f6, #2563EB); color: #fff; }
+.btn-gradient-success { background-image: linear-gradient(135deg, #10b981, #F59E0B); color: #0b1b2a; }
+.btn-gradient-danger { background-image: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+.btn-gradient-warning { background-image: linear-gradient(135deg, #f59e0b, #f97316); color: #111827; }
+.btn-gradient-purple { background-image: linear-gradient(135deg, #8b5cf6, #4f46e5); color: #fff; }
+
+.btn-glass { background: rgba(255,255,255,0.65); color: #111827; }
+.btn-glass-dark { background: rgba(17,24,39,0.35); color: #f3f4f6; }
+
+.btn-disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btn:hover { filter: brightness(1.03); }
+
 /* Ensure gradients play nicely with glass by keeping borders subtle */
 .glass.gradient-purple-indigo,
 .glass.gradient-cyan-blue {

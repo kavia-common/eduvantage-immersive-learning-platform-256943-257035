@@ -22,6 +22,7 @@ const Wellbeing = lazy(() => import("../views/Wellbeing"));
 const Career = lazy(() => import("../views/Career"));
 const StylePreview = lazy(() => import("../views/StylePreview"));
 const FeedDemo = lazy(() => import("../views/FeedDemo"));
+const Courses = lazy(() => import("../views/Courses"));
 
 /**
  * PUBLIC_INTERFACE
@@ -85,6 +86,12 @@ export const routes = [
     ),
     label: "Analytics",
     icon: "📈",
+  },
+  {
+    path: "/courses",
+    element: <Courses />,
+    label: "Courses",
+    icon: "🎓",
   },
   {
     path: "/feed",
