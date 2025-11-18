@@ -5,6 +5,7 @@ import { useLocation } from "react-router-dom";
 import VirtualClassroom from "../components/VirtualClassroom";
 import { supabaseEnvStatus } from "../lib/supabase";
 import { logger } from "../services/logger";
+import RealtimeDiagnostics from "../components/realtime/RealtimeDiagnostics";
 
 /**
  * PUBLIC_INTERFACE
@@ -54,6 +55,10 @@ export default function Classroom() {
       </header>
 
       <EnvDiagnostics />
+
+      <div className="surface gradient-bg" style={{ padding: "0.5rem" }}>
+        <RealtimeDiagnostics roomId={resolvedRoomId} />
+      </div>
 
       {(!supabaseEnvStatus.hasUrl || !supabaseEnvStatus.hasAnonKey) && (
         <div

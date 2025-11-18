@@ -33,6 +33,7 @@ export function useRealTime({ roomId, onSignal, userId }) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [lastError, setLastError] = useState(null);
   const [participants, setParticipants] = useState([]);
+  const [recentEvents, setRecentEvents] = useState([]); // capped events log
   const channelRef = useRef(null);
   const presenceKey = useMemo(() => {
     const stableUserId = userId || `guest-${Math.random().toString(36).slice(2, 8)}`;
@@ -40,6 +41,46 @@ export function useRealTime({ roomId, onSignal, userId }) {
   }, [userId]);
 
   const envOk = supabaseEnvStatus.hasUrl && supabaseEnvStatus.hasAnonKey;
+
+  const pushEvent = useCallback((evt) => {
+    // Keep last 50 events
+    setRecentEvents((prev) => {
+      const next = [{ ...evt, at: new Date().toISOString() }, ...prev];
+      return next.slice(0, 50);
+    });
+  }, []);
+
+  const reconnect = useCallback(() => {
+    try {
+      // Unsubscribe and allow effect to recreate on next tick
+      if (channelRef.current) {
+        channelRef.current.unsubscribe();
+        channelRef.current = null;
+      }
+      // Force state transitions; effect will re-run due to roomId/envOk deps
+      setIsConnecting(true);
+      setIsConnected(false);
+      setLastError(null);
+    } catch (e) {
+      logger.warn?.('[useRealTime] reconnect error', e);
+    }
+  }, []);
+
+  const resendPresenceTrack = useCallback(async () => {
+    if (!channelRef.current) return false;
+    try {
+      await channelRef.current.track({
+        user_id: presenceKey,
+        joined_at: new Date().toISOString(),
+      });
+      pushEvent({ type: 'presence', event: 'track', info: { user_id: presenceKey } });
+      return true;
+    } catch (e) {
+      setLastError(String(e?.message || e));
+      logger.error?.('[useRealTime] resendPresenceTrack error', e);
+      return false;
+    }
+  }, [presenceKey, pushEvent]);
 
   useEffect(() => {
     if (!envOk) {
@@ -73,7 +114,7 @@ export function useRealTime({ roomId, onSignal, userId }) {
 
     channelRef.current = channel;
 
-    // Subscribe to presence sync to refresh participant list
+    // Presence handlers
     channel.on('presence', { event: 'sync' }, () => {
       const state = channel.presenceState();
       const entries = Object.entries(state || {});
@@ -84,12 +125,28 @@ export function useRealTime({ roomId, onSignal, userId }) {
         })),
       );
       setParticipants(mapped);
+      pushEvent({ type: 'presence', event: 'sync', info: { count: mapped.length } });
+    });
+    channel.on('presence', { event: 'join' }, ({ key, newPresences }) => {
+      pushEvent({
+        type: 'presence',
+        event: 'join',
+        info: { key, count: newPresences?.length || 1 },
+      });
+    });
+    channel.on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+      pushEvent({
+        type: 'presence',
+        event: 'leave',
+        info: { key, count: leftPresences?.length || 1 },
+      });
     });
 
     // Listen for broadcast signals for WebRTC or other signaling
     channel.on('broadcast', { event: 'signal' }, (payload) => {
       try {
         const signal = payload?.payload;
+        pushEvent({ type: 'broadcast', event: 'signal', info: { sample: !!signal?.sample } });
         if (onSignal) {
           onSignal(signal);
         }
@@ -100,6 +157,7 @@ export function useRealTime({ roomId, onSignal, userId }) {
 
     // Subscribe to channel
     channel.subscribe(async (status) => {
+      pushEvent({ type: 'status', event: String(status) });
       if (status === 'SUBSCRIBED') {
         setIsConnected(true);
         setIsConnecting(false);
@@ -108,6 +166,7 @@ export function useRealTime({ roomId, onSignal, userId }) {
             user_id: presenceKey,
             joined_at: new Date().toISOString(),
           });
+          pushEvent({ type: 'presence', event: 'track', info: { user_id: presenceKey } });
         } catch (e) {
           logger.error?.('[useRealTime] presence track error', e);
           setLastError(String(e?.message || e));
@@ -140,7 +199,7 @@ export function useRealTime({ roomId, onSignal, userId }) {
       setIsConnecting(false);
       setParticipants([]);
     };
-  }, [envOk, roomId, presenceKey, onSignal]);
+  }, [envOk, roomId, presenceKey, onSignal, pushEvent]);
 
   const sendSignal = useCallback(
     async (signal) => {
@@ -153,17 +212,35 @@ export function useRealTime({ roomId, onSignal, userId }) {
           event: 'signal',
           payload: signal,
         });
+        pushEvent({ type: 'broadcast', event: 'send', info: { ok: res === 'ok' } });
         return res === 'ok';
       } catch (e) {
         logger.error?.('[useRealTime] sendSignal error', e);
         setLastError(String(e?.message || e));
+        pushEvent({ type: 'broadcast', event: 'send', info: { ok: false } });
         return false;
       }
     },
-    [],
+    [pushEvent],
   );
 
-  return { participants, isConnected, isConnecting, lastError, sendSignal, envOk };
+  // PUBLIC_INTERFACE
+  const sendBroadcast = sendSignal;
+
+  return {
+    participants,
+    isConnected,
+    isConnecting,
+    lastError,
+    sendSignal,
+    sendBroadcast,
+    envOk,
+    recentEvents,
+    reconnect,
+    resendPresenceTrack,
+    roomId,
+    presenceKey,
+  };
 }
 
 export default useRealTime;
