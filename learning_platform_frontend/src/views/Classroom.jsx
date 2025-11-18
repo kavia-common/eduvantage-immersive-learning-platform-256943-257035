@@ -1,30 +1,81 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ImmersiveClassroom from "../components/immersive/ImmersiveClassroom";
+import EnvDiagnostics from "../components/common/EnvDiagnostics";
+import { useLocation } from "react-router-dom";
+import VirtualClassroom from "../components/VirtualClassroom";
+import { supabaseEnvStatus } from "../lib/supabase";
 import { logger } from "../services/logger";
 
 /**
  * PUBLIC_INTERFACE
- * Classroom - renders the immersive classroom scaffolding with WebRTC client abstraction.
- * - Maps friendly "Room 101" to canonical signaling room id "classroom-101"
- * - Provides basic page chrome and logs mount for diagnostics
+ * Classroom - Renders the classroom page.
+ * Integrates Supabase Realtime presence via VirtualClassroom and preserves ImmersiveClassroom.
+ * Maps "Room 101" to canonical "101" for presence channel room:101.
  */
 export default function Classroom() {
-  const roomId = "classroom-101"; // maps to user-facing "Room 101"
+  /** This is a public function. */
+  const location = useLocation();
+  const [roomId, setRoomId] = useState("101"); // default Room 101
 
-  // Log once for diagnosability
-  React.useEffect(() => {
-    logger.info("Navigated to Classroom view", { roomId, friendlyName: "Room 101" });
+  useEffect(() => {
+    // Extract roomId from query or pathname
+    const params = new URLSearchParams(location.search);
+    const roomFromQuery = params.get("roomId");
+    if (roomFromQuery) {
+      setRoomId(roomFromQuery);
+    } else {
+      const parts = location.pathname.split("/").filter(Boolean);
+      const idx = parts.findIndex((p) => p.toLowerCase() === "classroom");
+      if (idx !== -1 && parts[idx + 1]) {
+        setRoomId(parts[idx + 1]);
+      }
+    }
+  }, [location]);
+
+  const resolvedRoomId = useMemo(() => {
+    if (roomId === "101" || String(roomId).toLowerCase() === "room-101") return "101";
+    // accommodate existing mapping that may have used "classroom-101"
+    if (String(roomId).toLowerCase() === "classroom-101") return "101";
+    return roomId || "101";
   }, [roomId]);
 
+  useEffect(() => {
+    logger?.info?.("Navigated to Classroom view", {
+      providedRoomId: roomId,
+      resolvedRoomId,
+      friendlyName: "Room 101",
+    });
+  }, [roomId, resolvedRoomId]);
+
   return (
-    <div className="container" style={{ display: "grid", gap: "1rem" }}>
-      <header className="surface" style={{ padding: "0.75rem 1rem" }}>
-        <div style={{ fontWeight: 700, fontSize: "1.1rem" }}>Room 101</div>
-        <div style={{ color: "var(--color-muted)", fontSize: ".9rem" }}>
-          Interactive Immersive Classroom
-        </div>
+    <div className="page-container" style={{ display: "grid", gap: "1rem" }}>
+      <header className="page-header">
+        <h2>Classroom</h2>
+        <p className="muted">Welcome to your immersive learning space.</p>
       </header>
-      <ImmersiveClassroom roomId={roomId} />
+
+      <EnvDiagnostics />
+
+      {(!supabaseEnvStatus.hasUrl || !supabaseEnvStatus.hasAnonKey) && (
+        <div
+          style={{
+            margin: "12px 0",
+            padding: "10px 12px",
+            borderRadius: 8,
+            background: "#fff7ed",
+            color: "#9a3412",
+            border: "1px solid #fdba74",
+          }}
+        >
+          Supabase Realtime not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in your .env to enable presence/signaling.
+        </div>
+      )}
+
+      <section style={{ marginTop: 16 }}>
+        <VirtualClassroom roomId={resolvedRoomId}>
+          <ImmersiveClassroom roomId={resolvedRoomId} />
+        </VirtualClassroom>
+      </section>
     </div>
   );
 }
