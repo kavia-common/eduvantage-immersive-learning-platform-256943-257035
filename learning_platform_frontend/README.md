@@ -63,6 +63,16 @@ Where are the styles defined?
 Preview page:
 - Navigate to `/style-preview` during development to see a simple visual smoke test.
 
+## Immersive Home Hero
+
+The Home view implements an immersive hero with:
+- Animated blurred gradient blobs
+- Centered heading/subtitle
+- CTA buttons: "Get Started" → `/signup`, "Explore Courses" → `/courses` (or `/dashboard` if `exploreV2` flag is enabled)
+- A grid of glass feature preview cards
+
+Note: Consider adding a screenshot of the hero section for visual QA in docs/ in future iterations.
+
 ## Learn More
 
 To learn React, check out the React documentation: https://reactjs.org/

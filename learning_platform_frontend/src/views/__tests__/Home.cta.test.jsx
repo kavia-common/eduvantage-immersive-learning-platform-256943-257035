@@ -28,6 +28,8 @@ describe("Home CTAs", () => {
           <Route path="/" element={<Home />} />
           <Route path="/signup" element={<Page label="Signup" />} />
           <Route path="/dashboard" element={<Page label="Dashboard" />} />
+          <Route path="/courses" element={<Page label="Courses" />} />
+          {/* legacy fallback */}
           <Route path="/feed" element={<Page label="Feed" />} />
         </Routes>
       </MemoryRouter>
@@ -40,21 +42,21 @@ describe("Home CTAs", () => {
     expect(screen.getByTestId("page")).toHaveTextContent("Signup");
   });
 
-  test("Explore navigates to /feed when exploreV2 disabled", () => {
+  test("Explore Courses navigates to /courses when exploreV2 disabled", () => {
     const { isFeatureEnabled } = require("../../services/featureFlags");
     isFeatureEnabled.mockReturnValue(false);
     renderWithRoutes();
-    const btn = screen.getByRole("button", { name: /explore/i });
+    const btn = screen.getByRole("button", { name: /explore courses/i });
     fireEvent.click(btn);
-    expect(screen.getByTestId("page")).toHaveTextContent("Feed");
+    expect(screen.getByTestId("page")).toHaveTextContent("Courses");
   });
 
-  test("Explore navigates to /dashboard when exploreV2 enabled", () => {
+  test("Explore Courses navigates to /dashboard when exploreV2 enabled", () => {
     const { isFeatureEnabled } = require("../../services/featureFlags");
     isFeatureEnabled.mockReturnValue(true);
     renderWithRoutes();
-    const btn = screen.getByRole("button", { name: /explore/i });
+    const btn = screen.getByRole("button", { name: /explore courses/i });
     fireEvent.click(btn);
     expect(screen.getByTestId("page")).toHaveTextContent("Dashboard");
   });
-}
+});
