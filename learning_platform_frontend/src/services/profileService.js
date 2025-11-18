@@ -11,6 +11,9 @@
 
 import { createApiClient } from "./apiClient";
 import { logger } from "./logger";
+// TODO: If backend is not available, consider wiring Supabase 'profiles' table here:
+// import { supabase } from "../lib/supabase";
+// and implement getCurrentUserProfile/updateProfile via supabase.from('profiles')
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || process.env.REACT_APP_API_BASE || "";
 
@@ -31,7 +34,7 @@ function simulate(result, delay = 650, shouldFail = false) {
 /**
  * PUBLIC_INTERFACE
  * Fetch the current user's profile.
- * Returns: { id, email, displayName, bio, avatarUrl }
+ * Returns: { id, email, displayName|name, bio, avatarUrl, role, interest, dateOfBirth }
  */
 export async function getCurrentUserProfile() {
   try {
@@ -39,14 +42,26 @@ export async function getCurrentUserProfile() {
       const client = getClient();
       // Prefer a standard path; update if backend differs.
       const data = await client.get("/api/profile/me");
-      return data;
+      // Normalize potential backend keys to our expected shape
+      return {
+        ...data,
+        displayName: data.displayName || data.name || "",
+        name: data.name || data.displayName || "",
+        role: data.role ?? "",
+        interest: data.interest ?? "",
+        dateOfBirth: data.dateOfBirth ?? "",
+      };
     }
     // Mocked profile for development without backend
     return await simulate({
       id: "mock-user-1",
       email: "student@example.com",
       displayName: "Ocean Learner",
+      name: "Ocean Learner",
       bio: "Curious mind exploring immersive learning.",
+      role: "Student",
+      interest: "AI, Web Development",
+      dateOfBirth: "2000-01-01",
       avatarUrl: "https://api.dicebear.com/7.x/thumbs/svg?seed=Ocean",
     });
   } catch (e) {
@@ -57,8 +72,8 @@ export async function getCurrentUserProfile() {
 
 /**
  * PUBLIC_INTERFACE
- * Update profile fields (displayName, email?, bio, avatar?)
- * Body: { displayName?: string, email?: string, bio?: string, avatarFile?: File }
+ * Update profile fields (displayName/name, email?, bio, role?, interest?, dateOfBirth?, avatar?)
+ * Body: { displayName?: string, name?: string, email?: string, bio?: string, role?: string, interest?: string, dateOfBirth?: string (YYYY-MM-DD), avatarFile?: File }
  * If avatarFile is provided, will POST multipart/form-data; else JSON.
  */
 export async function updateProfile(data = {}) {
@@ -69,16 +84,24 @@ export async function updateProfile(data = {}) {
       if (data.avatarFile instanceof File) {
         const form = new FormData();
         if (data.displayName != null) form.append("displayName", data.displayName);
+        if (data.name != null) form.append("name", data.name);
         if (data.email != null) form.append("email", data.email);
         if (data.bio != null) form.append("bio", data.bio);
+        if (data.role != null) form.append("role", data.role);
+        if (data.interest != null) form.append("interest", data.interest);
+        if (data.dateOfBirth != null) form.append("dateOfBirth", data.dateOfBirth);
         form.append("avatar", data.avatarFile);
         const res = await client.request("/api/profile/me", { method: "PUT", body: form });
         return res;
       }
       const res = await client.put("/api/profile/me", {
         displayName: data.displayName,
+        name: data.name,
         email: data.email,
         bio: data.bio,
+        role: data.role,
+        interest: data.interest,
+        dateOfBirth: data.dateOfBirth,
       });
       return res;
     }
@@ -88,8 +111,12 @@ export async function updateProfile(data = {}) {
       profile: {
         id: "mock-user-1",
         email: data.email || "student@example.com",
-        displayName: data.displayName || "Ocean Learner",
+        displayName: data.displayName || data.name || "Ocean Learner",
+        name: data.name || data.displayName || "Ocean Learner",
         bio: data.bio ?? "Curious mind exploring immersive learning.",
+        role: data.role ?? "Student",
+        interest: data.interest ?? "AI, Web Development",
+        dateOfBirth: data.dateOfBirth ?? "2000-01-01",
         avatarUrl: data.avatarPreview || "https://api.dicebear.com/7.x/thumbs/svg?seed=Ocean",
       },
     });

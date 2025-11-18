@@ -15,11 +15,17 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [initial, setInitial] = useState(null);
 
+  // Existing fields
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [bio, setBio] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState("");
+
+  // New profile fields
+  const [role, setRole] = useState("");
+  const [interest, setInterest] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
 
   // Password fields
   const [currentPwd, setCurrentPwd] = useState("");
@@ -36,6 +42,24 @@ export default function Profile() {
   const displayNameValid = displayName.trim().length >= 2;
   const emailValid = emailRegex.test(email.trim());
   const bioValid = bio.length <= 500;
+
+  // New field validations
+  const isDateInFuture = (value) => {
+    if (!value) return false;
+    try {
+      const input = new Date(value);
+      const today = new Date();
+      // zero time for date-only compare
+      input.setHours(0,0,0,0);
+      today.setHours(0,0,0,0);
+      return input > today;
+    } catch {
+      return true;
+    }
+  };
+  const dobValid = dateOfBirth ? !isDateInFuture(dateOfBirth) : true;
+  const roleValid = role.length <= 120;
+  const interestValid = interest.length <= 200;
   const pwdValid =
     newPwd.length >= 8 &&
     /[A-Z]/.test(newPwd) &&
@@ -51,9 +75,12 @@ export default function Profile() {
       displayName !== (initial.displayName || "") ||
       email !== (initial.email || "") ||
       bio !== (initial.bio || "") ||
+      role !== (initial.role || "") ||
+      interest !== (initial.interest || "") ||
+      dateOfBirth !== (initial.dateOfBirth || "") ||
       !!avatarFile
     );
-  }, [displayName, email, bio, avatarFile, initial]);
+  }, [displayName, email, bio, role, interest, dateOfBirth, avatarFile, initial]);
 
   useEffect(() => {
     let mounted = true;
@@ -63,9 +90,12 @@ export default function Profile() {
         const data = await getCurrentUserProfile();
         if (!mounted) return;
         setInitial(data);
-        setDisplayName(data?.displayName || "");
+        setDisplayName(data?.displayName || data?.name || "");
         setEmail(data?.email || user?.email || "");
         setBio(data?.bio || "");
+        setRole(data?.role || "");
+        setInterest(data?.interest || "");
+        setDateOfBirth(data?.dateOfBirth || "");
         setAvatarPreview(data?.avatarUrl || "");
       } catch (e) {
         setToast({ type: "error", message: "Failed to load profile." });
@@ -80,9 +110,12 @@ export default function Profile() {
 
   function resetToInitial() {
     if (!initial) return;
-    setDisplayName(initial.displayName || "");
+    setDisplayName(initial.displayName || initial.name || "");
     setEmail(initial.email || user?.email || "");
     setBio(initial.bio || "");
+    setRole(initial.role || "");
+    setInterest(initial.interest || "");
+    setDateOfBirth(initial.dateOfBirth || "");
     setAvatarFile(null);
     setAvatarPreview(initial.avatarUrl || "");
     setToast({ type: "", message: "" });
@@ -90,22 +123,31 @@ export default function Profile() {
 
   async function onSaveProfile(e) {
     e.preventDefault();
-    if (!dirty || !displayNameValid || !emailValid || !bioValid) return;
+    if (!dirty || !displayNameValid || !emailValid || !bioValid || !dobValid || !roleValid || !interestValid) return;
     setSaving(true);
     setToast({ type: "", message: "" });
     try {
       const result = await updateProfile({
+        // keep both displayName and name for compatibility
         displayName: displayName.trim(),
+        name: displayName.trim(),
         email: email.trim(),
         bio,
+        role,
+        interest,
+        dateOfBirth,
         avatarFile,
         avatarPreview,
       });
       const next = result?.profile || {
         ...initial,
         displayName: displayName.trim(),
+        name: displayName.trim(),
         email: email.trim(),
         bio,
+        role,
+        interest,
+        dateOfBirth,
         avatarUrl: avatarPreview || initial?.avatarUrl,
       };
       setInitial(next);
@@ -173,12 +215,16 @@ export default function Profile() {
             </h3>
             {loading ? (
               <p style={{ color: "var(--color-muted)" }}>Loading profile…</p>
+            ) : !initial ? (
+              <p style={{ color: "var(--color-muted)" }}>
+                No profile data found. You can create your profile by filling the form below and saving.
+              </p>
             ) : (
               <>
                 <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "minmax(0, 1fr)" }}>
                   <div>
                     <label htmlFor="displayName" style={{ display: "block", fontWeight: 600 }}>
-                      Display name
+                      Name
                     </label>
                     <input
                       id="displayName"
@@ -188,12 +234,64 @@ export default function Profile() {
                       onChange={(e) => setDisplayName(e.target.value)}
                       aria-invalid={!displayNameValid}
                       aria-describedby={!displayNameValid ? "displayName-err" : undefined}
-                      placeholder="Your public name"
+                      placeholder="Your full name"
                       style={inputStyle()}
                     />
                     {!displayNameValid && (
                       <span id="displayName-err" role="alert" style={errorStyle()}>
                         Name must be at least 2 characters.
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="role" style={{ display: "block", fontWeight: 600 }}>
+                      Role
+                    </label>
+                    <input
+                      id="role"
+                      name="role"
+                      type="text"
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                      aria-invalid={!roleValid}
+                      aria-describedby={!roleValid ? "role-err" : "role-hint"}
+                      placeholder="e.g., Student, Instructor"
+                      style={inputStyle()}
+                    />
+                    {!roleValid ? (
+                      <span id="role-err" role="alert" style={errorStyle()}>
+                        Role must be 120 characters or fewer.
+                      </span>
+                    ) : (
+                      <span id="role-hint" style={{ color: "var(--color-muted)", fontSize: "0.9rem" }}>
+                        Optional
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="interest" style={{ display: "block", fontWeight: 600 }}>
+                      Interest
+                    </label>
+                    <input
+                      id="interest"
+                      name="interest"
+                      type="text"
+                      value={interest}
+                      onChange={(e) => setInterest(e.target.value)}
+                      aria-invalid={!interestValid}
+                      aria-describedby={!interestValid ? "interest-err" : "interest-hint"}
+                      placeholder="e.g., AI, Web Development"
+                      style={inputStyle()}
+                    />
+                    {!interestValid ? (
+                      <span id="interest-err" role="alert" style={errorStyle()}>
+                        Interest must be 200 characters or fewer.
+                      </span>
+                    ) : (
+                      <span id="interest-hint" style={{ color: "var(--color-muted)", fontSize: "0.9rem" }}>
+                        Optional
                       </span>
                     )}
                   </div>
@@ -209,7 +307,7 @@ export default function Profile() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       aria-invalid={!emailValid}
-                      aria-describedby={!emailValid ? "email-err" : undefined}
+                      aria-describedby={!emailValid ? "email-err" : "email-hint"}
                       placeholder="you@example.com"
                       style={{
                         ...inputStyle(),
@@ -217,9 +315,39 @@ export default function Profile() {
                       }}
                       disabled={!emailEditable}
                     />
-                    {!emailValid && (
+                    {!emailValid ? (
                       <span id="email-err" role="alert" style={errorStyle()}>
                         Provide a valid email address.
+                      </span>
+                    ) : (
+                      <span id="email-hint" style={{ color: "var(--color-muted)", fontSize: "0.9rem" }}>
+                        Required
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="dob" style={{ display: "block", fontWeight: 600 }}>
+                      Date of Birth
+                    </label>
+                    <input
+                      id="dob"
+                      name="dateOfBirth"
+                      type="date"
+                      value={dateOfBirth}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                      aria-invalid={!dobValid}
+                      aria-describedby={!dobValid ? "dob-err" : "dob-hint"}
+                      style={inputStyle()}
+                      max={new Date().toISOString().split("T")[0]}
+                    />
+                    {!dobValid ? (
+                      <span id="dob-err" role="alert" style={errorStyle()}>
+                        Date of Birth cannot be in the future.
+                      </span>
+                    ) : (
+                      <span id="dob-hint" style={{ color: "var(--color-muted)", fontSize: "0.9rem" }}>
+                        Optional
                       </span>
                     )}
                   </div>
@@ -264,7 +392,19 @@ export default function Profile() {
                 </div>
 
                 <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
-                  <Button type="submit" disabled={!dirty || !displayNameValid || !emailValid || !bioValid || saving}>
+                  <Button
+                    type="submit"
+                    disabled={
+                      !dirty ||
+                      !displayNameValid ||
+                      !emailValid ||
+                      !bioValid ||
+                      !dobValid ||
+                      !roleValid ||
+                      !interestValid ||
+                      saving
+                    }
+                  >
                     {saving ? "Saving…" : "Save changes"}
                   </Button>
                   <Button
