@@ -4,14 +4,15 @@ import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import AssistantPanel from "../components/assistant/AssistantPanel";
 import LearningAssistant from "../components/assistant/LearningAssistant";
+import VirtualClassroom from "../components/VirtualClassroom";
 
 /**
  * PUBLIC_INTERFACE
- * Dashboard - authenticated overview module with glass welcome header,
- * stats grid, and quick actions aligned with the Ocean Professional theme.
+ * Dashboard - authenticated overview with glass welcome header, stats, quick actions,
+ * assistant modules, and a Virtual Classroom preview panel.
  *
  * Accessibility: Includes aria labels and roles for interactive elements.
- * Responsiveness: Uses CSS grid with auto-fit for cards and stats.
+ * Responsiveness: Uses CSS grid and responsive cards.
  */
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -38,7 +39,7 @@ export default function Dashboard() {
     },
     {
       label: "Take Quiz",
-      to: "/analytics", // placeholder to existing route
+      to: "/analytics",
       emoji: "🧠",
       aria: "Take an adaptive practice quiz",
     },
@@ -173,6 +174,19 @@ export default function Dashboard() {
         </Card>
       </section>
 
+      {/* Virtual Classroom Preview Panel */}
+      <section className="mt-3" aria-label="Virtual Classroom preview panel">
+        <Card variant="glass" style={{ padding: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", marginBottom: "0.5rem" }}>
+            <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Virtual Classroom</h2>
+            <Link to="/classroom" aria-label="Open full classroom view" title="Open full classroom view">
+              <Button variant="glass" className="is-interactive">Open</Button>
+            </Link>
+          </div>
+          <VirtualClassroom embedded />
+        </Card>
+      </section>
+
       {/* Assistant panel remains available below */}
       <section className="mt-3" aria-label="AI Assistant">
         <AssistantPanel defaultOpen />
@@ -183,7 +197,7 @@ export default function Dashboard() {
         <LearningAssistant />
       </section>
 
-      {/* Social, wellbeing, career previews */}
+      {/* Explore modules */}
       <section className="mt-3" aria-label="Explore modules">
         <div
           style={{

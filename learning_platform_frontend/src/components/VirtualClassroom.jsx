@@ -1,124 +1,138 @@
-/**
- * VirtualClassroom
- * - Uses Supabase Realtime presence/broadcast via useRealTime hook
- * - Renders connection state, participants list, and a child/placeholder area for immersive container
- */
-
-import React, { useMemo } from 'react';
-import useRealTime from '../hooks/useRealTime';
+import React, { useMemo, useState } from 'react';
 import './virtualClassroom.css';
-import { supabaseEnvStatus } from '../lib/supabase';
 
 /**
  * PUBLIC_INTERFACE
  * VirtualClassroom
- * Realtime presence container for a classroom. Shows participants and connection diagnostics.
+ * A glass-styled placeholder classroom component with:
+ * - Connection toggle (Join/Leave)
+ * - Participants list (mock) with count
+ * - Basic controls (Camera/Mic toggle - UI only)
+ * - Responsive seats grid preview when connected
  *
- * @param {Object} props
- * @param {string|number} props.roomId - Room identifier
- * @param {(signal:any)=>void} [props.onSignal] - Optional incoming signal handler
- * @param {React.ReactNode} [props.children] - Optional immersive/3D UI mount area
+ * Props:
+ * - embedded?: boolean — if true, renders a compact header suited for dashboard panels
  */
-export default function VirtualClassroom({ roomId, onSignal, children }) {
-  /** This is a public function. */
-  const { participants, isConnected, isConnecting, lastError, sendSignal, envOk } = useRealTime({ roomId, onSignal });
+function VirtualClassroom({ embedded = false }) {
+  const [isConnected, setIsConnected] = useState(false);
+  const [cameraOn, setCameraOn] = useState(true);
+  const [micOn, setMicOn] = useState(true);
 
-  const handleRetry = () => {
-    window.location.reload();
+  // Simple mock participants list (could later be lifted via props or context)
+  const participants = useMemo(
+    () => (isConnected ? ['You', 'Sam', 'Alex', 'Taylor', 'Jordan'] : []),
+    [isConnected]
+  );
+
+  const participantCount = participants.length;
+
+  const handleJoin = () => {
+    setIsConnected(true);
   };
 
-  const handleTestSignal = async () => {
-    await sendSignal({ type: 'ping', at: new Date().toISOString() });
+  const handleLeave = () => {
+    setIsConnected(false);
   };
-
-  const missingEnvMsg = !envOk ? (
-    <div className="vc-banner vc-banner-warning" role="note" aria-live="polite">
-      Supabase Realtime not configured. Please add REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_KEY to your .env and restart the app.
-    </div>
-  ) : null;
-
-  const supabaseHost = useMemo(() => {
-    try {
-      const url = process.env.REACT_APP_SUPABASE_URL || '';
-      if (!url) return '(unset)';
-      const u = new URL(url);
-      return u.host;
-    } catch {
-      return '(invalid)';
-    }
-  }, []);
 
   return (
-    <section className="vc-container" aria-label="Virtual Classroom">
+    <div className={`vc-container glass ${embedded ? 'vc-embedded' : ''}`} role="region" aria-label="Virtual Classroom section">
       <header className="vc-header">
-        <h3 className="vc-title">Virtual Classroom</h3>
-        {!isConnected ? (
-          <div className={`vc-connection ${isConnecting ? 'vc-connection-pending' : 'vc-connection-bad'}`}>
-            <span className={`vc-dot ${isConnecting ? 'vc-dot-amber' : 'vc-dot-red'}`} aria-hidden="true" />
-            <span>{isConnecting ? 'Connecting to Supabase Realtime…' : 'Connection error'}</span>
-            <button className="vc-btn" onClick={handleRetry} type="button">
-              Retry
-            </button>
+        <div className="vc-title-group">
+          <h3 className="vc-title">{embedded ? 'Classroom Preview' : 'Virtual Classroom'}</h3>
+          <div className={`vc-status ${isConnected ? 'connected' : 'disconnected'}`} aria-live="polite">
+            <span className="vc-status-dot" aria-hidden="true" />
+            <span className="vc-status-text">{isConnected ? 'Connected' : 'Disconnected'}</span>
           </div>
-        ) : (
-          <div className="vc-connection vc-connection-good">
-            <span className="vc-dot vc-dot-green" aria-hidden="true" />
-            <span>Connected • {participants.length} participant{participants.length === 1 ? '' : 's'}</span>
-            <button className="vc-btn-secondary" onClick={handleTestSignal} type="button">
-              Send Test Signal
+        </div>
+        <div className="vc-actions">
+          {!isConnected ? (
+            <button
+              className="vc-btn vc-primary"
+              onClick={handleJoin}
+              aria-label="Join Classroom"
+            >
+              Join Classroom
             </button>
-          </div>
-        )}
+          ) : (
+            <button
+              className="vc-btn vc-danger"
+              onClick={handleLeave}
+              aria-label="Leave"
+            >
+              Leave
+            </button>
+          )}
+        </div>
       </header>
 
-      {missingEnvMsg}
-
-      {lastError && envOk && !isConnecting && !isConnected && (
-        <div className="vc-banner vc-banner-error" role="alert" aria-live="assertive">
-          Realtime error: {lastError}
-        </div>
-      )}
-
-      <div className="vc-diagnostics muted">
-        Supabase: {supabaseHost} • Channel: room:{String(roomId)}
-      </div>
-
-      <div className="vc-content">
-        <aside className="vc-participants" aria-label="Participants">
-          <div className="vc-participants-header">
-            <strong>Participants</strong>
-            <span className="vc-count">{participants.length}</span>
+      <div className="vc-body">
+        <aside className="vc-side glass-sm" aria-label="Participants">
+          <div className="vc-side-header">
+            <h4 className="vc-side-title">Participants</h4>
+            <span className="vc-badge" aria-label={`Participants count ${participantCount}`}>
+              {participantCount}
+            </span>
           </div>
           <ul className="vc-participants-list">
             {participants.length === 0 ? (
-              <li className="vc-participant muted">No one is here yet</li>
+              <li className="vc-participant muted">No participants yet</li>
             ) : (
-              participants.map((p, idx) => (
-                <li className="vc-participant" key={`${p.user_id}-${idx}`}>
-                  <span className="vc-avatar" aria-hidden="true">
-                    {String(p.user_id).slice(0, 2).toUpperCase()}
-                  </span>
-                  <div className="vc-participant-meta">
-                    <div className="vc-participant-id">{p.user_id}</div>
-                    <div className="vc-participant-time">Joined: {new Date(p.joined_at).toLocaleTimeString()}</div>
-                  </div>
+              participants.map((p) => (
+                <li key={p} className="vc-participant">
+                  <span className="vc-avatar" aria-hidden="true">{p.charAt(0).toUpperCase()}</span>
+                  <span className="vc-name">{p}</span>
                 </li>
               ))
             )}
           </ul>
         </aside>
 
-        <main className="vc-stage" aria-label="Immersive Stage">
-          {children ? (
-            children
+        <main className="vc-stage glass-sm">
+          {!isConnected ? (
+            <div className="vc-disconnected" aria-label="classroom disconnected placeholder">
+              <p className="vc-helper-text">Connect to preview classroom seating and controls.</p>
+            </div>
           ) : (
-            <div className="vc-stage-placeholder">
-              <p>Immersive/3D content mounts here.</p>
-              <p className="muted">This area is reserved for the ImmersiveClassroom component or other content.</p>
+            <div className="vc-connected" aria-label="classroom connected preview">
+              <div className="vc-grid" role="grid" aria-label="Seating grid">
+                {Array.from({ length: 9 }).map((_, i) => (
+                  <div role="gridcell" className="vc-seat" key={i} aria-label={`Seat ${i + 1}`}>
+                    <div className="vc-seat-video-sim" />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </main>
       </div>
-    </section>
+
+      <footer className="vc-controls">
+        <div className="vc-controls-group" role="group" aria-label="Media controls">
+          <button
+            className={`vc-icon-btn ${cameraOn ? '' : 'off'}`}
+            onClick={() => setCameraOn((v) => !v)}
+            aria-label="Toggle camera"
+            title="Toggle camera"
+          >
+            {cameraOn ? '📷' : '🚫📷'}
+          </button>
+          <button
+            className={`vc-icon-btn ${micOn ? '' : 'off'}`}
+            onClick={() => setMicOn((v) => !v)}
+            aria-label="Toggle microphone"
+            title="Toggle microphone"
+          >
+            {micOn ? '🎙️' : '🔇'}
+          </button>
+        </div>
+        <div className="vc-hint" aria-live="polite">
+          {isConnected
+            ? 'Preview mode: media is not being captured.'
+            : 'Join to preview seating layout.'}
+        </div>
+      </footer>
+    </div>
   );
 }
+
+export default VirtualClassroom;
