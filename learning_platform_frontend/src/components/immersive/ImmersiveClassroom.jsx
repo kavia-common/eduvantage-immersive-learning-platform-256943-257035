@@ -3,6 +3,7 @@ import Controls from "./Controls";
 import { createWebRTCClient } from "../../services/WebRTCClient";
 import { logger } from "../../services/logger";
 import { useAuth } from "../../auth/AuthProvider";
+import { env } from "../../config/env";
 
 /**
  * PUBLIC_INTERFACE
@@ -24,10 +25,18 @@ export default function ImmersiveClassroom({ roomId = "demo-room" }) {
   const [micOn, setMicOn] = useState(true);
   const [participants, setParticipants] = useState([]); // {id, stream}
   const [error, setError] = useState("");
+  const [wsStatus, setWsStatus] = useState("unknown");
 
   const title = useMemo(() => `Room: ${roomId}`, [roomId]);
 
   useEffect(() => {
+    logger.info("ImmersiveClassroom mount", {
+      roomId,
+      userId,
+      backend: env.BACKEND_URL || "(same-origin)",
+      wsUrl: env.WS_URL || "(derived)",
+    });
+
     clientRef.current = createWebRTCClient({ roomId, userId });
 
     const off1 = clientRef.current.on("local-stream", ({ stream }) => {
@@ -53,6 +62,16 @@ export default function ImmersiveClassroom({ roomId = "demo-room" }) {
       setConnected(state === "connected" || state === "connecting");
     });
 
+    // WS socket state probe
+    const wsProbe = setInterval(() => {
+      try {
+        const readyState = clientRef.current?.wsClient?.socket?.readyState;
+        setWsStatus(typeof readyState === "number" ? String(readyState) : "n/a");
+      } catch {
+        setWsStatus("n/a");
+      }
+    }, 1500);
+
     // Acquire local media preview on mount
     (async () => {
       try {
@@ -64,8 +83,8 @@ export default function ImmersiveClassroom({ roomId = "demo-room" }) {
 
     return () => {
       try { off1(); off2(); off3(); off4(); off5(); } catch {}
-      // Do not auto-leave; component unmount leaves for safety
       clientRef.current?.leave().catch(() => {});
+      clearInterval(wsProbe);
     };
   }, [roomId, userId]);
 
@@ -108,8 +127,11 @@ export default function ImmersiveClassroom({ roomId = "demo-room" }) {
 
   return (
     <div style={{ display: "grid", gap: "1rem" }}>
-      <div className="surface" style={{ padding: "0.75rem", display: "flex", alignItems: "center" }}>
+      <div className="surface" style={{ padding: "0.75rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
         <div style={{ fontWeight: 700 }}>{title}</div>
+        <div style={{ color: "var(--color-muted)", fontSize: ".85rem" }}>
+          WS: {env.WS_URL || "(derived)"} | Backend: {env.BACKEND_URL || "(same-origin)"} | WS state: {wsStatus}
+        </div>
         <div style={{ marginLeft: "auto", color: "var(--color-muted)", fontSize: ".9rem" }}>
           {connected ? "Connected" : "Not connected"}
         </div>
@@ -142,7 +164,9 @@ export default function ImmersiveClassroom({ roomId = "demo-room" }) {
             <div style={{ fontWeight: 600, marginBottom: ".5rem" }}>Participants ({participants.length})</div>
             <div style={{ display: "grid", gap: ".5rem" }}>
               {participants.length === 0 && (
-                <div style={{ color: "var(--color-muted)", fontSize: ".95rem" }}>No remote participants yet.</div>
+                <div style={{ color: "var(--color-muted)", fontSize: ".95rem" }}>
+                  No remote participants yet. Ensure another user joins the same room and that signaling is connected.
+                </div>
               )}
               {participants.map((p) => (
                 <ParticipantRow key={p.id} id={p.id} stream={p.stream} />
