@@ -21,6 +21,7 @@ const FeedView = lazy(() => import("../views/Feed"));
 const Wellbeing = lazy(() => import("../views/Wellbeing"));
 const Career = lazy(() => import("../views/Career"));
 const StylePreview = lazy(() => import("../views/StylePreview"));
+const FeedDemo = lazy(() => import("../views/FeedDemo"));
 
 /**
  * PUBLIC_INTERFACE
@@ -114,8 +115,9 @@ export const routes = [
     icon: "🧭",
   },
 
-  // Utility preview route (not in sidebar)
+  // Utility preview routes (not in sidebar)
   { path: "/style-preview", element: <StylePreview />, label: "Style Preview" },
+  { path: "/feed-demo", element: <FeedDemo />, label: "Feed Demo" },
 
   // Auth routes (not in sidebar)
   { path: "/login", element: <Login />, label: "Login" },

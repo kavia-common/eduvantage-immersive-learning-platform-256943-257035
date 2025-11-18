@@ -229,6 +229,45 @@ export default function Dashboard() {
           />
         </div>
       </section>
+
+      {/* Inline Social Feed preview panel */}
+      <section className="mt-3" aria-label="Social Feed preview">
+        <Card variant="glass" style={{ padding: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", marginBottom: "0.5rem" }}>
+            <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Community Feed</h2>
+            <Link to="/feed" aria-label="Open full social feed" title="Open full social feed">
+              <Button variant="glass" className="is-interactive">Open</Button>
+            </Link>
+          </div>
+          {/* Lightweight sample feed list */}
+          <div style={{ display: "grid", gap: "0.75rem" }}>
+            <article className="surface glass-sm" style={{ padding: ".75rem" }} aria-label="Post by Ava Singh">
+              <header style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
+                <div aria-hidden style={{ fontSize: "1.5rem" }}>🎓</div>
+                <div style={{ fontWeight: 700 }}>Ava Singh</div>
+                <div style={{ color: "var(--color-muted)", fontSize: ".85rem", marginLeft: "auto" }}>2h ago</div>
+              </header>
+              <div className="mt-2">Just completed the Algebra mastery quiz with 95%!</div>
+              <div className="mt-2" style={{ display: "flex", gap: ".5rem" }}>
+                <Button variant="glass" className="is-interactive" aria-label="Like post">👍 Like (12)</Button>
+                <Button variant="glass" className="is-interactive" aria-label="Comment on post">💬 Comment (4)</Button>
+              </div>
+            </article>
+            <article className="surface glass-sm" style={{ padding: ".75rem" }} aria-label="Post by Noah Kim">
+              <header style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
+                <div aria-hidden style={{ fontSize: "1.5rem" }}>📚</div>
+                <div style={{ fontWeight: 700 }}>Noah Kim</div>
+                <div style={{ color: "var(--color-muted)", fontSize: ".85rem", marginLeft: "auto" }}>4h ago</div>
+              </header>
+              <div className="mt-2">Study group tonight at 7pm for Biology. Drop your questions!</div>
+              <div className="mt-2" style={{ display: "flex", gap: ".5rem" }}>
+                <Button variant="glass" className="is-interactive" aria-label="Like post">👍 Like (7)</Button>
+                <Button variant="glass" className="is-interactive" aria-label="Comment on post">💬 Comment (9)</Button>
+              </div>
+            </article>
+          </div>
+        </Card>
+      </section>
     </div>
   );
 }

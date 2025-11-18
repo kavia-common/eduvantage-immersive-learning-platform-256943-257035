@@ -36,3 +36,23 @@ import VirtualClassroom from 'src/components/VirtualClassroom';
 Notes:
 - This is a placeholder without real media or signaling. No secrets are required.
 - Accessibility: buttons include aria-labels; connected preview has an aria-label for screen readers.
+
+---
+
+## Social Feed
+
+There are two feed experiences:
+- Live Feed: available at /feed (uses FeedProvider, optimistic updates, comments)
+- Static SocialFeed: a glass-styled demo with sample posts and a disabled composer at /feed-demo
+
+Usage (component):
+import SocialFeed from 'src/components/feed/SocialFeed';
+<SocialFeed />
+
+Dashboard includes:
+- A "Social Feed" preview card linking to /feed
+- An inline Community Feed preview panel showing a couple of sample posts
+
+Accessibility:
+- Action buttons include accessible labels and titles
+- Semantic article/header sections
