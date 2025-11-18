@@ -11,6 +11,7 @@ import { CourseResources } from '../components/courses/CourseResources';
 import { CourseCard } from '../components/courses/CourseCard';
 import Button from '../components/common/Button';
 import { enrollmentService } from '../services/enrollmentService';
+import { settingsStorage } from '../services/settingsStorage';
 
 /**
  * PUBLIC_INTERFACE
@@ -24,6 +25,11 @@ import { enrollmentService } from '../services/enrollmentService';
  *
  * Styling:
  * - Uses existing .glass classes and shared Button variants from components/common/Button
+ *
+ * Filters/Sorting:
+ * - Search by title/description/instructor
+ * - Multi-select Category and Level filters
+ * - Sort by rating, price (if present), duration (hh/mm), popularity (students), title A–Z
  */
 
 // PUBLIC_INTERFACE
@@ -138,10 +144,46 @@ const TABS = [
 export default function Courses({ coursesData: overrideData }) {
   const navigate = useNavigate();
   const courses = useMemo(() => overrideData || coursesData, [overrideData]);
+
+  // Detail/enrollment state (existing)
   const [selected, setSelected] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [enrolledIds, setEnrolledIds] = useState(() => enrollmentService.getAll());
   const [banner, setBanner] = useState(null);
+
+  // Filter/sort/search state
+  const STORAGE_SECTION = 'courses_catalog';
+  const [query, setQuery] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedLevels, setSelectedLevels] = useState([]);
+  const [sortKey, setSortKey] = useState('rating_desc'); // default sort
+
+  // Hydrate from settingsStorage (optional persistence)
+  useEffect(() => {
+    const settings = settingsStorage.get();
+    if (settings?.[STORAGE_SECTION]) {
+      const { query: q, selectedCategories: c, selectedLevels: l, sortKey: s } = settings[STORAGE_SECTION];
+      if (typeof q === 'string') setQuery(q);
+      if (Array.isArray(c)) setSelectedCategories(c);
+      if (Array.isArray(l)) setSelectedLevels(l);
+      if (typeof s === 'string') setSortKey(s);
+    }
+  }, []);
+
+  // Persist on change
+  useEffect(() => {
+    const prev = settingsStorage.get() || {};
+    const next = {
+      ...prev,
+      [STORAGE_SECTION]: {
+        query,
+        selectedCategories,
+        selectedLevels,
+        sortKey,
+      },
+    };
+    settingsStorage.set(next);
+  }, [query, selectedCategories, selectedLevels, sortKey]);
 
   useEffect(() => {
     // Hydrate enrolled state on mount or storage changes
@@ -149,6 +191,76 @@ export default function Courses({ coursesData: overrideData }) {
       setEnrolledIds(enrollmentService.getAll());
     } catch {}
   }, []);
+
+  // Derive available categories and levels from data
+  const allCategories = useMemo(
+    () => Array.from(new Set((courses || []).map(c => c.category).filter(Boolean))).sort(),
+    [courses]
+  );
+  const allLevels = useMemo(
+    () => Array.from(new Set((courses || []).map(c => c.level).filter(Boolean))).sort(),
+    [courses]
+  );
+
+  // Helpers
+  const parseDurationToMinutes = (dur) => {
+    // Accept formats like "6h 30m", "8h", "45m"
+    if (!dur || typeof dur !== 'string') return 0;
+    const h = /([0-9]+)\s*h/i.exec(dur)?.[1];
+    const m = /([0-9]+)\s*m/i.exec(dur)?.[1];
+    const hours = h ? parseInt(h, 10) : 0;
+    const mins = m ? parseInt(m, 10) : 0;
+    return hours * 60 + mins;
+  };
+
+  const compareString = (a = '', b = '') => a.localeCompare(b, undefined, { sensitivity: 'base' });
+
+  // Derived filtered + sorted list
+  const visibleCourses = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const matchQuery = (c) => {
+      if (!q) return true;
+      const hay = [
+        c.title,
+        c.description,
+        c.category,
+        c.level,
+        c?.instructor?.name,
+      ].filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(q);
+    };
+    const matchCategory = (c) => selectedCategories.length === 0 || selectedCategories.includes(c.category);
+    const matchLevel = (c) => selectedLevels.length === 0 || selectedLevels.includes(c.level);
+
+    const filtered = (courses || []).filter(c => matchQuery(c) && matchCategory(c) && matchLevel(c));
+
+    const by = (key) => {
+      switch (key) {
+        case 'rating_desc':
+          return (a, b) => (b.rating || 0) - (a.rating || 0);
+        case 'rating_asc':
+          return (a, b) => (a.rating || 0) - (b.rating || 0);
+        case 'duration_asc':
+          return (a, b) => parseDurationToMinutes(a.duration) - parseDurationToMinutes(b.duration);
+        case 'duration_desc':
+          return (a, b) => parseDurationToMinutes(b.duration) - parseDurationToMinutes(a.duration);
+        case 'students_desc':
+          return (a, b) => (b.students || 0) - (a.students || 0);
+        case 'students_asc':
+          return (a, b) => (a.students || 0) - (b.students || 0);
+        case 'price_asc':
+          return (a, b) => (a.price || 0) - (b.price || 0);
+        case 'price_desc':
+          return (a, b) => (b.price || 0) - (a.price || 0);
+        case 'title_asc':
+          return (a, b) => compareString(a.title, b.title);
+        default:
+          return (a, b) => (b.rating || 0) - (a.rating || 0);
+      }
+    };
+
+    return filtered.slice().sort(by(sortKey));
+  }, [courses, query, selectedCategories, selectedLevels, sortKey]);
 
   const onSelect = (course) => {
     setSelected(course);
@@ -187,12 +299,153 @@ export default function Courses({ coursesData: overrideData }) {
     }
   };
 
+  // Multi-select handlers using checkboxes
+  const toggleInArray = (arr, value) => (arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value]);
+
   return (
     <div className="page-container" data-testid="courses-page">
       <div className="page-header">
         <h1 className="page-title">Course Catalog</h1>
         <p className="page-subtitle">Explore curated paths to accelerate your learning</p>
       </div>
+
+      {/* Controls bar */}
+      <section
+        aria-label="Course catalog controls"
+        className="glass panel"
+        style={{
+          padding: '0.75rem 1rem',
+          marginBottom: '0.75rem',
+          display: 'grid',
+          gap: '0.75rem',
+        }}
+      >
+        {/* Row 1: Search + Sort */}
+        <div
+          className="flex"
+          style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}
+        >
+          <div style={{ flex: '1 1 260px', minWidth: 220 }}>
+            <label htmlFor="course-search" className="sr-only">Search courses</label>
+            <input
+              id="course-search"
+              type="search"
+              placeholder="Search by title, description, or instructor"
+              aria-label="Search courses"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="glass"
+              style={{
+                width: '100%',
+                padding: '0.5rem 0.75rem',
+                borderRadius: 8,
+                border: '1px solid rgba(0,0,0,0.06)',
+                outline: 'none',
+              }}
+            />
+          </div>
+
+          <div style={{ flex: '0 1 220px', minWidth: 160 }}>
+            <label htmlFor="sort-select" className="sr-only">Sort courses</label>
+            <select
+              id="sort-select"
+              aria-label="Sort courses"
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value)}
+              className="glass"
+              style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: 8 }}
+            >
+              <option value="rating_desc">Top rated</option>
+              <option value="rating_asc">Rating: Low to High</option>
+              <option value="duration_asc">Duration: Shortest</option>
+              <option value="duration_desc">Duration: Longest</option>
+              <option value="students_desc">Most popular</option>
+              <option value="students_asc">Least popular</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="title_asc">Title: A–Z</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Row 2: Filters */}
+        <div
+          className="flex"
+          style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}
+        >
+          {/* Category filter */}
+          <fieldset
+            aria-labelledby="category-legend"
+            className="glass"
+            style={{ padding: '0.5rem 0.75rem', borderRadius: 8, minWidth: 240, border: '1px solid rgba(0,0,0,0.06)' }}
+          >
+            <legend id="category-legend" style={{ fontSize: 13, color: '#4b5563' }}>Categories</legend>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {allCategories.map((cat) => {
+                const id = `cat-${cat}`;
+                const checked = selectedCategories.includes(cat);
+                return (
+                  <label key={cat} htmlFor={id} className="is-interactive" style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
+                    <input
+                      id={id}
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => setSelectedCategories(prev => toggleInArray(prev, cat))}
+                      aria-checked={checked}
+                    />
+                    <span>{cat}</span>
+                  </label>
+                );
+              })}
+              {allCategories.length === 0 && <span style={{ color: '#6b7280' }}>No categories</span>}
+            </div>
+          </fieldset>
+
+          {/* Level filter */}
+          <fieldset
+            aria-labelledby="level-legend"
+            className="glass"
+            style={{ padding: '0.5rem 0.75rem', borderRadius: 8, minWidth: 240, border: '1px solid rgba(0,0,0,0.06)' }}
+          >
+            <legend id="level-legend" style={{ fontSize: 13, color: '#4b5563' }}>Levels</legend>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {allLevels.map((lvl) => {
+                const id = `lvl-${lvl}`;
+                const checked = selectedLevels.includes(lvl);
+                return (
+                  <label key={lvl} htmlFor={id} className="is-interactive" style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
+                    <input
+                      id={id}
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => setSelectedLevels(prev => toggleInArray(prev, lvl))}
+                      aria-checked={checked}
+                    />
+                    <span>{lvl}</span>
+                  </label>
+                );
+              })}
+              {allLevels.length === 0 && <span style={{ color: '#6b7280' }}>No levels</span>}
+            </div>
+          </fieldset>
+
+          {/* Clear filters button */}
+          <div style={{ marginLeft: 'auto' }}>
+            <Button
+              variant="glass"
+              aria-label="Clear filters"
+              onClick={() => {
+                setQuery('');
+                setSelectedCategories([]);
+                setSelectedLevels([]);
+                setSortKey('rating_desc');
+              }}
+            >
+              Clear
+            </Button>
+          </div>
+        </div>
+      </section>
 
       <div className="grid-and-detail" style={{ display: 'grid', gridTemplateColumns: selected ? '1.2fr 1fr' : '1fr', gap: '1.25rem' }}>
         <section aria-label="Course list" className="glass panel" style={{ padding: '1rem' }}>
@@ -204,7 +457,7 @@ export default function Courses({ coursesData: overrideData }) {
               gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
             }}
           >
-            {courses.map((course) => (
+            {visibleCourses.map((course) => (
               <CourseCard
                 key={course.id}
                 course={course}
@@ -212,6 +465,17 @@ export default function Courses({ coursesData: overrideData }) {
                 isActive={selected?.id === course.id}
               />
             ))}
+
+            {visibleCourses.length === 0 && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="glass"
+                style={{ padding: '1rem', borderRadius: 8, gridColumn: '1 / -1', color: '#6b7280' }}
+              >
+                No courses match your filters.
+              </div>
+            )}
           </div>
         </section>
 
