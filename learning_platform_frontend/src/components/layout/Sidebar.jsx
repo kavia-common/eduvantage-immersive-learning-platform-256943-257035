@@ -26,8 +26,9 @@ export default function Sidebar({ collapsed = false, onToggle }) {
             to={r.path}
             className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
             end={r.path === "/"}
+            aria-current={({ isActive }) => (isActive ? "page" : undefined)}
           >
-            <span className="icon" aria-hidden>{r.icon}</span>
+            <span className="icon" aria-hidden="true">{r.icon}</span>
             {!collapsed && <span>{r.label}</span>}
           </NavLink>
         ))}
