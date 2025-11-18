@@ -1,20 +1,24 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import { logger } from "../services/logger";
 import { apiClient } from "../services/apiClient";
 import { isFeatureEnabled } from "../services/featureFlags";
+import ThreeDBackground from "../components/home/ThreeDBackground";
+import FeatureCard3D from "../components/home/FeatureCard3D";
+import PreviewModal from "../components/home/PreviewModal";
 import "../styles/theme.css";
 import "../styles/utilities.css";
 
 /**
  * PUBLIC_INTERFACE
- * Home page - immersive landing with animated gradient hero, glass preview cards, and CTAs.
+ * Home page - immersive landing with animated 3D background, 3D tilt cards, and CTAs.
  * Accessibility: proper landmarks, aria-labels for CTAs, sufficient color contrast via theme tokens.
  */
 export default function Home() {
   const navigate = useNavigate();
+  const [modal, setModal] = useState({ open: false, title: "", key: "" });
 
   const onGetStarted = async (e) => {
     e?.preventDefault?.();
@@ -32,31 +36,30 @@ export default function Home() {
 
   const onExplore = (e) => {
     e?.preventDefault?.();
-    // Respect feature flag behavior; otherwise default to courses (fallback handled below)
     const exploreV2 = isFeatureEnabled("exploreV2");
     logger.debug("Explore feature flag", { exploreV2 });
-    // If explore feature flag exists, route to v2 dashboard; else fall back to courses (or feed if courses not present)
     const destination = exploreV2 ? "/dashboard" : "/courses";
     navigate(destination);
   };
 
-  // Fallback handler if /courses route is not defined; router will handle 404 or alias elsewhere if absent.
   const handleExploreKey = (e) => {
     if (e.key === "Enter" || e.key === " ") {
       onExplore(e);
     }
   };
 
-  // Decorative animated blobs for hero background
-  const blobCommon = {
-    position: "absolute",
-    filter: "blur(60px)",
-    opacity: 0.6,
-    borderRadius: "50%",
-    pointerEvents: "none",
-    animationTimingFunction: "ease-in-out",
-    willChange: "transform, opacity",
-  };
+  const blobCommon = useMemo(
+    () => ({
+      position: "absolute",
+      filter: "blur(60px)",
+      opacity: 0.6,
+      borderRadius: "50%",
+      pointerEvents: "none",
+      animationTimingFunction: "ease-in-out",
+      willChange: "transform, opacity",
+    }),
+    []
+  );
 
   return (
     <main role="main" aria-labelledby="home-heading" style={{ isolation: "isolate" }}>
@@ -70,6 +73,9 @@ export default function Home() {
           background: "var(--gradient-soft)",
         }}
       >
+        {/* 3D animated particles layer */}
+        <ThreeDBackground />
+
         {/* Animated gradient/blur layers */}
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 0 }}>
           <div
@@ -142,7 +148,6 @@ export default function Home() {
                 Get Started
               </Button>
 
-              {/* Use glass variant for secondary CTA to align with Ocean Professional theme */}
               <Button
                 variant="glass"
                 className="is-interactive"
@@ -176,67 +181,130 @@ export default function Home() {
             justifyContent: "center",
           }}
         >
-          <FeatureCard
+          <FeatureCard3D
             title="Immersive Classroom"
             description="Real-time collaboration, spatial audio, and interactive boards."
             emoji="🎓"
+            onPreview={() => setModal({ open: true, title: "Immersive Classroom Preview", key: "classroom" })}
           />
-          <FeatureCard
+          <FeatureCard3D
             title="AI Tutor"
             description="Adaptive assistance tailored to your pace and goals."
             emoji="🤖"
+            onPreview={() => setModal({ open: true, title: "AI Tutor Preview", key: "tutor" })}
           />
-          <FeatureCard
+          <FeatureCard3D
             title="Analytics"
             description="Progress tracking with insights that keep you on course."
             emoji="📊"
+            onPreview={() => setModal({ open: true, title: "Analytics Preview", key: "analytics" })}
           />
-          <FeatureCard
+          <FeatureCard3D
             title="Community"
             description="Learn together through posts, comments, and peer feedback."
             emoji="🧑‍🤝‍🧑"
+            onPreview={() => setModal({ open: true, title: "Community Preview", key: "community" })}
           />
         </div>
       </section>
-    </main>
-  );
-}
 
-/**
- * FeatureCard - small glass preview card with simple hover motion.
- */
-function FeatureCard({ title, description, emoji }) {
-  return (
-    <Card
-      variant="glass"
-      className="is-interactive"
-      style={{
-        width: "min(100%, 280px)",
-        minHeight: 160,
-        padding: "1.1rem",
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.5rem",
-      }}
-      aria-label={`${title} feature`}
-    >
-      <div style={{ fontSize: "1.5rem" }} aria-hidden="true">
-        {emoji}
-      </div>
-      <div style={{ fontWeight: 700 }}>{title}</div>
-      <div style={{ color: "var(--color-muted)" }}>{description}</div>
-      <div className="glass-divider" style={{ marginTop: "0.5rem" }} />
-      <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-        <span
-          style={{
-            fontSize: "0.85rem",
-            color: "var(--color-primary)",
-            fontWeight: 600,
-          }}
-        >
-          Preview
-        </span>
-      </div>
-    </Card>
+      <PreviewModal
+        open={modal.open}
+        onClose={() => setModal({ open: false, title: "", key: "" })}
+        title={modal.title}
+      >
+        {modal.key === "classroom" && (
+          <div>
+            <p>
+              Experience a live, collaborative classroom with shared whiteboards, spatial audio,
+              and low-latency presence. Join a session to see peers interacting in real-time.
+            </p>
+            <div
+              className="glass"
+              style={{
+                padding: "0.75rem",
+                display: "grid",
+                gap: "0.5rem",
+                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+              }}
+            >
+              <div className="surface glass-sm" style={{ padding: ".5rem" }} aria-label="Whiteboard module">
+                🧠 Whiteboard
+              </div>
+              <div className="surface glass-sm" style={{ padding: ".5rem" }} aria-label="Chat module">
+                💬 Live Chat
+              </div>
+              <div className="surface glass-sm" style={{ padding: ".5rem" }} aria-label="Presence module">
+                👥 Presence
+              </div>
+              <div className="surface glass-sm" style={{ padding: ".5rem" }} aria-label="Media module">
+                🎥 Media
+              </div>
+            </div>
+          </div>
+        )}
+        {modal.key === "tutor" && (
+          <div>
+            <p>
+              Your personal AI tutor adapts to your goals and pace. Ask questions, get hints,
+              and receive step-by-step walkthroughs to master concepts.
+            </p>
+            <div className="glass" style={{ padding: ".75rem" }}>
+              <div style={{ display: "grid", gap: ".5rem" }}>
+                <div className="surface glass-sm" style={{ padding: ".5rem" }} aria-label="Example prompt">
+                  Q: How do I solve quadratic equations quickly?
+                </div>
+                <div className="surface glass-sm" style={{ padding: ".5rem" }} aria-label="Example AI response">
+                  A: Use the quadratic formula x = [-b ± √(b² - 4ac)] / (2a). Identify a, b, c from ax² + bx + c = 0.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {modal.key === "analytics" && (
+          <div>
+            <p>
+              Track your progress with visual insights across topics, time, and mastery. Identify
+              strengths and areas to improve with actionable suggestions.
+            </p>
+            <div
+              className="glass"
+              style={{
+                padding: ".75rem",
+                display: "grid",
+                gap: ".5rem",
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              }}
+            >
+              <div className="surface glass-sm" style={{ padding: ".5rem" }} aria-label="Streak card">
+                🔥 Streak: 7 days
+              </div>
+              <div className="surface glass-sm" style={{ padding: ".5rem" }} aria-label="Accuracy card">
+                🎯 Accuracy: 92%
+              </div>
+              <div className="surface glass-sm" style={{ padding: ".5rem" }} aria-label="Time card">
+                ⏱️ Study Time: 12h 45m
+              </div>
+            </div>
+          </div>
+        )}
+        {modal.key === "community" && (
+          <div>
+            <p>
+              Learn together through posts, comments, and peer feedback. Share milestones and
+              join study groups aligned with your goals.
+            </p>
+            <div className="glass" style={{ padding: ".75rem", display: "grid", gap: ".5rem" }}>
+              <div className="surface glass-sm" style={{ padding: ".5rem" }} aria-label="Sample post 1">
+                🎓 Ava: Just aced Algebra mastery quiz with 95%!
+              </div>
+              <div className="surface glass-sm" style={{ padding: ".5rem" }} aria-label="Sample post 2">
+                📚 Noah: Study group tonight at 7pm — join in!
+              </div>
+            </div>
+          </div>
+        )}
+      </PreviewModal>
+    </main>
   );
 }

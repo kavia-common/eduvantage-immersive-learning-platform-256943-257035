@@ -16,6 +16,13 @@
 .gap-3 { gap: 1rem; }
 .text-right { text-align: right; } /* helper */
 
+/* responsive container helper */
+.container {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
 .hide-sm { display: none; }
 @media (min-width: 768px) {
   .hide-sm { display: initial; }
@@ -91,3 +98,20 @@
   transform: translateY(-1px);
   transition: box-shadow 180ms ease, transform 180ms ease;
 }
+
+/* Animation utilities */
+@keyframes float {
+  from { transform: translateY(0px); }
+  to { transform: translateY(-6px); }
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 0.6; }
+}
+.animate-float { animation: float 4s ease-in-out infinite alternate; }
+.animate-pulse { animation: pulse-soft 3s ease-in-out infinite; }
+
+/* Stagger helpers */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
