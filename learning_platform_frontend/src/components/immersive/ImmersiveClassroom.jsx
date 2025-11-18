@@ -3,7 +3,7 @@ import Controls from "./Controls";
 import { createWebRTCClient } from "../../services/WebRTCClient";
 import { logger } from "../../services/logger";
 import { useAuth } from "../../auth/AuthProvider";
-import { env } from "../../config/env";
+import { env, getFeatureFlag } from "../../config/env";
 
 /**
  * PUBLIC_INTERFACE
@@ -28,13 +28,15 @@ export default function ImmersiveClassroom({ roomId = "demo-room" }) {
   const [wsStatus, setWsStatus] = useState("unknown");
 
   const title = useMemo(() => `Room: ${roomId}`, [roomId]);
+  const showCustomWS = getFeatureFlag("useCustomWS") === true;
 
   useEffect(() => {
     logger.info("ImmersiveClassroom mount", {
       roomId,
       userId,
       backend: env.BACKEND_URL || "(same-origin)",
-      wsUrl: env.WS_URL || "(derived)",
+      // Only log WS URL when custom WS is explicitly enabled
+      wsUrl: showCustomWS ? (env.WS_URL || "(derived)") : "(supabase-realtime)",
     });
 
     clientRef.current = createWebRTCClient({ roomId, userId });
@@ -62,15 +64,17 @@ export default function ImmersiveClassroom({ roomId = "demo-room" }) {
       setConnected(state === "connected" || state === "connecting");
     });
 
-    // WS socket state probe
-    const wsProbe = setInterval(() => {
-      try {
-        const readyState = clientRef.current?.wsClient?.socket?.readyState;
-        setWsStatus(typeof readyState === "number" ? String(readyState) : "n/a");
-      } catch {
-        setWsStatus("n/a");
-      }
-    }, 1500);
+    // WS socket state probe (only if feature flag enabled)
+    const wsProbe = showCustomWS
+      ? setInterval(() => {
+          try {
+            const readyState = clientRef.current?.wsClient?.socket?.readyState;
+            setWsStatus(typeof readyState === "number" ? String(readyState) : "n/a");
+          } catch {
+            setWsStatus("n/a");
+          }
+        }, 1500)
+      : null;
 
     // Acquire local media preview on mount
     (async () => {
@@ -84,9 +88,9 @@ export default function ImmersiveClassroom({ roomId = "demo-room" }) {
     return () => {
       try { off1(); off2(); off3(); off4(); off5(); } catch {}
       clientRef.current?.leave().catch(() => {});
-      clearInterval(wsProbe);
+      if (wsProbe) clearInterval(wsProbe);
     };
-  }, [roomId, userId]);
+  }, [roomId, userId, showCustomWS]);
 
   const onJoin = async () => {
     setError("");
@@ -130,7 +134,9 @@ export default function ImmersiveClassroom({ roomId = "demo-room" }) {
       <div className="surface" style={{ padding: "0.75rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
         <div style={{ fontWeight: 700 }}>{title}</div>
         <div style={{ color: "var(--color-muted)", fontSize: ".85rem" }}>
-          WS: {env.WS_URL || "(derived)"} | Backend: {env.BACKEND_URL || "(same-origin)"} | WS state: {wsStatus}
+          {showCustomWS
+            ? <>WS: {env.WS_URL || "(derived)"} | Backend: {env.BACKEND_URL || "(same-origin)"} | WS state: {wsStatus}</>
+            : <>Backend: {env.BACKEND_URL || "(same-origin)"} | Realtime: Supabase</>}
         </div>
         <div style={{ marginLeft: "auto", color: "var(--color-muted)", fontSize: ".9rem" }}>
           {connected ? "Connected" : "Not connected"}

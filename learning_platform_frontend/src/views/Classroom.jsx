@@ -34,7 +34,6 @@ export default function Classroom() {
 
   const resolvedRoomId = useMemo(() => {
     if (roomId === "101" || String(roomId).toLowerCase() === "room-101") return "101";
-    // accommodate existing mapping that may have used "classroom-101"
     if (String(roomId).toLowerCase() === "classroom-101") return "101";
     return roomId || "101";
   }, [roomId]);
@@ -67,7 +66,7 @@ export default function Classroom() {
             border: "1px solid #fdba74",
           }}
         >
-          Supabase Realtime not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in your .env to enable presence/signaling.
+          Supabase Realtime not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_KEY in your .env to enable presence/signaling.
         </div>
       )}
 

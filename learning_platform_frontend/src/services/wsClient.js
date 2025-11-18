@@ -3,9 +3,10 @@
 /**
  * WebSocket client with environment-aware URL resolution and simple reconnect.
  * REACT_APP_WS_URL preferred; when missing, it attempts to derive from current location.
+ * Note: Logs and warnings about REACT_APP_WS_URL are suppressed unless feature flag 'useCustomWS' is enabled.
  */
 
-import { env } from "../config/env";
+import { env, getFeatureFlag } from "../config/env";
 import { logger } from "./logger";
 
 /** Normalize provided or derived URL and ensure it is ws:// or wss:// */
@@ -13,17 +14,13 @@ function normalizeWsUrl(url) {
   if (!url) return "";
   try {
     const u = new URL(url, typeof window !== "undefined" ? window.location.origin : undefined);
-    // If schema missing but path provided, prepend protocol/host
     if (!/^wss?:$/i.test(u.protocol)) {
-      // Allow http(s) to be converted
       if (u.protocol === "https:") return url.replace(/^https:/i, "wss:");
       if (u.protocol === "http:") return url.replace(/^http:/i, "ws:");
-      // Unknown protocol; reject
       return "";
     }
     return u.toString();
   } catch {
-    // Attempt to coerce common cases like "//host/ws"
     if (typeof window !== "undefined") {
       const base = window.location.protocol === "https:" ? "wss:" : "ws:";
       if (url.startsWith("//")) return `${base}${url}`;
@@ -40,12 +37,19 @@ function deriveWsUrl() {
   return `${wsProto}//${host}/ws`;
 }
 
-/** Resolve base WS URL with safe fallback and diagnostics */
+/** Resolve base WS URL with safe fallback and diagnostics (feature-flagged) */
 function resolveWsUrl() {
+  const customWS = getFeatureFlag("useCustomWS") === true;
   const providedRaw = env.WS_URL || "";
   const provided = normalizeWsUrl(providedRaw);
+
+  if (!customWS) {
+    // In default path, do not encourage custom WS usage; return empty so WSClient remains inactive.
+    return "";
+  }
+
   if (provided) {
-    logger.info("Using REACT_APP_WS_URL for WebSocket", { url: provided });
+    logger.info("Using REACT_APP_WS_URL for WebSocket (feature-flagged)", { url: provided });
     return provided;
   }
   if (providedRaw && !provided) {
@@ -53,7 +57,7 @@ function resolveWsUrl() {
   }
   const derived = normalizeWsUrl(deriveWsUrl());
   if (!derived) {
-    logger.error("Unable to resolve WebSocket URL. Provide REACT_APP_WS_URL or ensure window.location is available.");
+    logger.error("Unable to resolve WebSocket URL.");
   } else {
     logger.warn("REACT_APP_WS_URL is not set; using derived WebSocket URL.", { derived });
   }
@@ -75,11 +79,12 @@ class WSClient {
     if (this.url) {
       this.connect();
     } else {
-      logger.warn("WebSocket URL is empty; wsClient will remain disconnected.");
+      // Silent by default unless feature flag enables WS
+      logger.debug?.("WSClient idle: custom WS not enabled or URL not resolved.");
     }
   }
 
-  /** PUBLIC_INTERFACE */
+  // PUBLIC_INTERFACE
   connect() {
     if (!this.url || typeof WebSocket === "undefined") {
       logger.warn("WebSocket not available in this environment or URL missing.", {
@@ -100,7 +105,6 @@ class WSClient {
       });
 
       this.socket.addEventListener("message", (evt) => {
-        // Trace low level only at debug
         logger.debug("WebSocket message", { size: typeof evt?.data === "string" ? evt.data.length : undefined });
         this._emit("message", evt);
       });
@@ -121,7 +125,7 @@ class WSClient {
     }
   }
 
-  /** PUBLIC_INTERFACE */
+  // PUBLIC_INTERFACE
   send(data) {
     if (this.socket && this.socket.readyState === 1) {
       this.socket.send(typeof data === "string" ? data : JSON.stringify(data));
@@ -132,21 +136,21 @@ class WSClient {
     }
   }
 
-  /** PUBLIC_INTERFACE */
+  // PUBLIC_INTERFACE
   close(code, reason) {
     if (this.socket) {
       this.socket.close(code, reason);
     }
   }
 
-  /** PUBLIC_INTERFACE */
+  // PUBLIC_INTERFACE
   on(event, handler) {
     if (!this._listeners[event]) this._listeners[event] = [];
     this._listeners[event].push(handler);
     return () => this.off(event, handler);
   }
 
-  /** PUBLIC_INTERFACE */
+  // PUBLIC_INTERFACE
   off(event, handler) {
     if (!this._listeners[event]) return;
     this._listeners[event] = this._listeners[event].filter((h) => h !== handler);
@@ -165,7 +169,7 @@ class WSClient {
       });
       return;
     }
-    const delay = 1000 * (this._reconnectAttempts + 1); // linear backoff
+    const delay = 1000 * (this._reconnectAttempts + 1);
     logger.info("Scheduling WebSocket reconnect", { in_ms: delay, attempt: this._reconnectAttempts + 1 });
     this._reconnectAttempts += 1;
     setTimeout(() => this.connect(), delay);
