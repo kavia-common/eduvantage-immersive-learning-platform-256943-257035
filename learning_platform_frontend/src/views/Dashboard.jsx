@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import AssistantPanel from "../components/assistant/AssistantPanel";
+import LearningAssistant from "../components/assistant/LearningAssistant";
 
 /**
  * PUBLIC_INTERFACE
@@ -175,6 +176,11 @@ export default function Dashboard() {
       {/* Assistant panel remains available below */}
       <section className="mt-3" aria-label="AI Assistant">
         <AssistantPanel defaultOpen />
+      </section>
+
+      {/* New Learning Assistant (static UI) */}
+      <section className="mt-3" aria-label="Learning Assistant (static)">
+        <LearningAssistant />
       </section>
 
       {/* Social, wellbeing, career previews */}
