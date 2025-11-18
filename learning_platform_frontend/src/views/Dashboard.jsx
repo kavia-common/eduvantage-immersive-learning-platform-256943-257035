@@ -30,7 +30,7 @@ export default function Dashboard() {
                 </p>
               </div>
               <div style={{ marginLeft: "auto" }}>
-                {/* Feed feature removed */}
+                <Link to="/feed"><button className="btn">Open Feed</button></Link>
               </div>
             </div>
           </Card>

@@ -89,15 +89,10 @@ export class WebRTCClient {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       this.localStream = stream;
       this.emitter.emit("local-stream", { stream });
-      logger.info("Local media acquired", {
-        audio: !!stream.getAudioTracks().length,
-        video: !!stream.getVideoTracks().length,
-      });
       return stream;
     } catch (e) {
       const msg = String(e?.message || e);
       this.emitter.emit("error", { message: msg });
-      logger.error("Failed to acquire local media", { error: msg });
       throw e;
     }
   }
@@ -110,8 +105,6 @@ export class WebRTCClient {
      */
     if (this._started) return;
     this._started = true;
-
-    logger.info("Joining classroom", { roomId: this.roomId, userId: this.userId });
 
     const config = {
       iceServers: [
@@ -147,23 +140,16 @@ export class WebRTCClient {
         const existing = this.remoteStreams.get(pid) || stream;
         this.remoteStreams.set(pid, existing);
         this.emitter.emit("track-added", { id: pid, stream: existing });
-        logger.info("Remote track added", { participantId: pid });
       }
     };
 
     // Attach local tracks
     if (this.localStream) {
       this.localStream.getTracks().forEach((t) => this.pc.addTrack(t, this.localStream));
-    } else {
-      logger.warn("Joining without localStream; call startLocalMedia() prior to join for preview.");
     }
 
     // Wire WS signaling listeners
     this._wsUnsubs.push(wsClient.on("message", this._onWsMessage));
-    // Report initial ws availability
-    if (!wsClient || !wsClient.socket) {
-      this.emitter.emit("error", { message: "Signaling socket not initialized. Check REACT_APP_WS_URL." });
-    }
 
     // Announce presence (stub)
     this._sendSignal({ type: "join", roomId: this.roomId, from: this.userId });
@@ -177,7 +163,6 @@ export class WebRTCClient {
     /**
      * Leave the classroom and clean up resources.
      */
-    logger.info("Leaving classroom", { roomId: this.roomId, userId: this.userId });
     try {
       this._sendSignal({ type: "leave", roomId: this.roomId, from: this.userId });
     } catch {
@@ -235,11 +220,8 @@ export class WebRTCClient {
         from: this.userId,
         sdp: offer.sdp,
       });
-      logger.debug("Offer created and sent");
     } catch (e) {
-      const msg = String(e?.message || e);
-      this.emitter.emit("error", { message: msg });
-      logger.error("Failed to create/send offer", { error: msg });
+      this.emitter.emit("error", { message: String(e?.message || e) });
     }
   }
 
@@ -267,17 +249,14 @@ export class WebRTCClient {
       }
       case "join": {
         this.emitter.emit("participant-joined", { id: data.from });
-        logger.info("Participant joined", { id: data.from });
         // In a real SFU/MCU, the server coordinates; for P2P mesh you'd respond here.
         break;
       }
       case "leave": {
         this.emitter.emit("participant-left", { id: data.from });
-        logger.info("Participant left", { id: data.from });
         break;
       }
       default:
-        logger.debug("Unhandled signaling message", { type: data.type });
         break;
     }
   }
@@ -288,11 +267,8 @@ export class WebRTCClient {
       const answer = await this.pc.createAnswer();
       await this.pc.setLocalDescription(answer);
       this._sendSignal({ type: "answer", roomId: this.roomId, from: this.userId, to: from, sdp: answer.sdp });
-      logger.debug("Answer created and sent");
     } catch (e) {
-      const msg = String(e?.message || e);
-      this.emitter.emit("error", { message: msg });
-      logger.error("Failed to handle remote offer", { error: msg });
+      this.emitter.emit("error", { message: String(e?.message || e) });
     }
   }
 
@@ -300,11 +276,8 @@ export class WebRTCClient {
     try {
       const desc = new RTCSessionDescription({ type: "answer", sdp });
       await this.pc.setRemoteDescription(desc);
-      logger.debug("Remote answer applied");
     } catch (e) {
-      const msg = String(e?.message || e);
-      this.emitter.emit("error", { message: msg });
-      logger.error("Failed to handle remote answer", { error: msg });
+      this.emitter.emit("error", { message: String(e?.message || e) });
     }
   }
 
@@ -312,12 +285,9 @@ export class WebRTCClient {
     try {
       if (candidate) {
         await this.pc.addIceCandidate(new RTCIceCandidate(candidate));
-        logger.debug("Remote ICE candidate added");
       }
     } catch (e) {
-      const msg = String(e?.message || e);
-      this.emitter.emit("error", { message: msg });
-      logger.error("Failed to add remote ICE", { error: msg });
+      this.emitter.emit("error", { message: String(e?.message || e) });
     }
   }
 
@@ -326,20 +296,9 @@ export class WebRTCClient {
      * Best-effort send via wsClient. Backend should route to peers in same room.
      */
     try {
-      if (!wsClient?.socket || wsClient.socket.readyState !== 1) {
-        this.emitter.emit("error", {
-          message: "Signaling server not connected. Participants may not appear. Check REACT_APP_WS_URL.",
-        });
-        logger.warn("Attempted to send signal while socket not open", {
-          readyState: wsClient?.socket?.readyState,
-          payloadType: payload?.type,
-        });
-      }
       wsClient.send({ ...payload });
     } catch (e) {
-      const msg = String(e?.message || e);
-      logger.warn("Failed to send signal", { error: msg });
-      this.emitter.emit("error", { message: "Failed to send signaling message." });
+      logger.warn("Failed to send signal", { error: String(e?.message || e) });
     }
   }
 }
