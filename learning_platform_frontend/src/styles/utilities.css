@@ -14,6 +14,7 @@
 .justify-between { justify-content: space-between; }
 .gap-2 { gap: 0.5rem; }
 .gap-3 { gap: 1rem; }
+.text-right { text-align: right; } /* helper */
 
 .hide-sm { display: none; }
 @media (min-width: 768px) {
