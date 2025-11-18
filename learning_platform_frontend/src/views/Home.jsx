@@ -124,7 +124,7 @@ export default function Home() {
           >
             <h1 id="home-heading" style={{ fontSize: "clamp(2rem, 6vw, 3.25rem)", margin: 0 }}>
               Learn without limits with
-              <span style={{ color: "var(--color-primary)" }}> EduVantage</span>
+              <span style={{ color: "var(--color-primary)" }}> DIGITALT3</span>
             </h1>
             <p
               style={{

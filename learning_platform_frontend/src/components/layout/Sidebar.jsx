@@ -14,7 +14,7 @@ export default function Sidebar({ collapsed = false, onToggle }) {
     <aside className={`lp-sidebar surface ${collapsed ? "collapsed" : ""}`}>
       <div className="brand">
         <div className="logo">🌊</div>
-        {!collapsed && <div className="name">EduVantage</div>}
+        {!collapsed && <div className="name">DIGITALT3</div>}
         <button className="collapse-btn" onClick={onToggle} aria-label="Toggle sidebar">
           {collapsed ? "›" : "‹"}
         </button>

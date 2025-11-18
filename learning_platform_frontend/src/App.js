@@ -15,7 +15,7 @@ import { AssistantProvider } from "./state/assistantContext";
 function RoutedLayout({ children }) {
   const location = useLocation();
   const match = appRoutes.find((r) => r.path === location.pathname);
-  const title = match?.label || "EduVantage";
+  const title = match?.label || "DIGITALT3";
   return <Layout pageTitle={title}>{children}</Layout>;
 }
 
