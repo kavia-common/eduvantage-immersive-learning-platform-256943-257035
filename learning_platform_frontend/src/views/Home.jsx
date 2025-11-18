@@ -13,7 +13,7 @@ import { isFeatureEnabled } from "../services/featureFlags";
  *
  * Get Started -> navigates to /signup if unauthenticated experience is desired,
  * or /dashboard if choosing to show app preview right away. For now, route to /signup.
- * Explore -> navigates to /dashboard if feature flag exploreV2 is enabled, else to /feed.
+ * Explore -> navigates to /dashboard.
  */
 export default function Home() {
   const navigate = useNavigate();
@@ -35,11 +35,9 @@ export default function Home() {
 
   const onExplore = (e) => {
     e?.preventDefault?.();
-    const enabled = isFeatureEnabled("exploreV2");
-    logger.debug("Explore feature flag", { enabled });
-
-    // If the new explore is enabled, go to dashboard; otherwise, route to feed as a public preview
-    navigate(enabled ? "/dashboard" : "/feed");
+    logger.debug("Explore clicked");
+    // Always navigate to dashboard; feed is no longer available
+    navigate("/dashboard");
   };
 
   return (
