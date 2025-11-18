@@ -22,7 +22,7 @@ function getClient() {
   return createApiClient(base);
 }
 
-function simulate(result, delay = 650, shouldFail = false) {
+function simulate(result, delay = 250, shouldFail = false) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       if (shouldFail) reject(result instanceof Error ? result : new Error(String(result)));

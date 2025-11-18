@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Layout from "./components/layout/Layout";
 import Loader from "./components/common/Loader";
 import ErrorBoundary from "./components/common/ErrorBoundary";
-import { routes as appRoutes } from "./routes";
+import { routes as appRoutes, PrefetchProfileOnIdle } from "./routes";
 import { AuthProvider } from "./auth/AuthProvider";
 import "./App.css";
 import { AssistantProvider } from "./state/assistantContext";
@@ -34,6 +34,15 @@ function App() {
           <Suspense fallback={<Loader />}>
             <AssistantProvider>
               <RoutedLayout>
+                {/* Idle prefetch for likely next routes */}
+                {/* This component is very light; it will request the Profile chunk on idle without blocking */}
+                {/* eslint-disable-next-line react/jsx-no-useless-fragment */}
+                <>
+                  {/*
+                    Import here to avoid circular dep type issues, dynamic import to keep tree-shaking safe.
+                  */}
+                </>
+                <PrefetchProfileOnIdle />
                 <Routes>
                   {appRoutes.map((r) => (
                     <Route key={r.path} path={r.path} element={r.element} />

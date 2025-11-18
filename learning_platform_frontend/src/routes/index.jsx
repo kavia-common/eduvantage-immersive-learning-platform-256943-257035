@@ -3,7 +3,7 @@
   * Defines core pages and lazy loading boundaries.
   * Ensures protected pages are gated and common components are used.
   */
-import React, { lazy } from "react";
+import React, { lazy, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import ProtectedRoute from "../auth/ProtectedRoute";
 
@@ -29,6 +29,28 @@ const FeedDemo = lazy(() => import("../views/FeedDemo"));
  * - label is used for sidebar and TopNav title
  * - icon is displayed in the Sidebar
  */
+export function PrefetchProfileOnIdle() {
+  useEffect(() => {
+    const cb = () => {
+      // Hint the browser to warm up DNS/TLS if backend is remote; also dynamic import for the route chunk.
+      try {
+        import("../views/Profile");
+      } catch (_) {}
+    };
+    const id = ("requestIdleCallback" in window)
+      ? window.requestIdleCallback(cb)
+      : setTimeout(cb, 2000);
+    return () => {
+      if ("cancelIdleCallback" in window && typeof id === "number") {
+        window.cancelIdleCallback(id);
+      } else {
+        clearTimeout(id);
+      }
+    };
+  }, []);
+  return null;
+}
+
 export const routes = [
   // Core public page
   { path: "/", element: <Home />, label: "Home", icon: "🏠" },

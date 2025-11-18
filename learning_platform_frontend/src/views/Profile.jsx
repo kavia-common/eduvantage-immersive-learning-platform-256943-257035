@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef, memo, Suspense } from "react";
 import "../styles/utilities.css";
 import "../styles/theme.css";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +6,7 @@ import Button from "../components/common/Button";
 import Card from "../components/common/Card";
 import AvatarUploader from "../components/common/AvatarUploader";
 import { getCurrentUserProfile, updateProfile } from "../services/profileService";
+import ProfileSkeleton from "./ProfileSkeleton";
 
 /**
  * PUBLIC_INTERFACE
@@ -16,19 +17,27 @@ import { getCurrentUserProfile, updateProfile } from "../services/profileService
 export default function Profile() {
   const navigate = useNavigate();
 
+  // Defer initial heavy work on idle if available
+  const requestIdle = (cb) => {
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      return window.requestIdleCallback(cb);
+    }
+    return setTimeout(cb, 0);
+  };
+
   // Tabs and selection
-  const tabs = useMemo(
-    () => [
+  const TABS = useMemo(
+    () => ([
       { id: "info", label: "Profile Info", aria: "Profile information" },
       { id: "progress", label: "Learning Progress", aria: "Learning progress" },
       { id: "account", label: "Account Settings", aria: "Account settings" },
       { id: "security", label: "Security", aria: "Security settings" },
-    ],
+    ]),
     []
   );
   const [activeTab, setActiveTab] = useState("info");
 
-  // Profile state
+  // Profile state kept shallow where possible to reduce update churn
   const [profile, setProfile] = useState({
     name: "",
     displayName: "",
@@ -55,48 +64,68 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Load profile on mount
+  // Load profile on mount - abort/cancel aware; set minimal state first, deep merges deferred to idle
   useEffect(() => {
     let mounted = true;
+    let cancelled = false;
+
     (async () => {
       try {
         const data = await getCurrentUserProfile();
-        if (!mounted) return;
+        if (!mounted || cancelled) return;
+
+        // Minimal visible fields first to unblock paint
         setProfile((prev) => ({
           ...prev,
-          ...data,
           name: data?.name || data?.displayName || prev.name,
           displayName: data?.displayName || data?.name || prev.displayName,
+          email: data?.email ?? prev.email,
           avatarUrl: data?.avatarUrl || prev.avatarUrl,
-          stats: { ...prev.stats, ...(data?.stats || {}) },
-          preferences: { ...prev.preferences, ...(data?.preferences || {}) },
-          progress: data?.progress?.length ? data.progress : prev.progress,
         }));
+
+        // Defer deep merges/progress stats to idle to avoid long blocking work on main render tick
+        requestIdle(() => {
+          if (cancelled) return;
+          setProfile((prev) => ({
+            ...prev,
+            role: data?.role ?? prev.role,
+            interest: data?.interest ?? prev.interest,
+            dateOfBirth: data?.dateOfBirth ?? prev.dateOfBirth,
+            bio: data?.bio ?? prev.bio,
+            stats: { ...prev.stats, ...(data?.stats || {}) },
+            preferences: { ...prev.preferences, ...(data?.preferences || {}) },
+            progress: data?.progress?.length ? data.progress : prev.progress,
+          }));
+        });
       } catch (e) {
-        // Non-fatal: keep defaults but surface a message
         setError("Failed to load profile. Using defaults.");
       } finally {
         if (mounted) setLoading(false);
       }
     })();
+
     return () => {
       mounted = false;
+      cancelled = true;
     };
   }, []);
 
-  // Editing state clone
+  // Editing state clone - keep reference stable unless profile changes
   const [draft, setDraft] = useState(profile);
   useEffect(() => {
-    setDraft(profile);
+    // Defer cloning to avoid blocking state updates on large objects
+    const id = requestIdle(() => setDraft(profile));
+    return () => clearTimeout(id);
   }, [profile]);
 
-  const handleEditToggle = () => {
+  // Stable handlers to avoid re-renders of memoized children
+  const handleEditToggle = useCallback(() => {
     setEditing((prev) => !prev);
     setError("");
-    setDraft(profile);
-  };
+    setDraft((d) => ({ ...profile, preferences: { ...profile.preferences }, stats: { ...profile.stats } }));
+  }, [profile]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setSaving(true);
     setError("");
     try {
@@ -110,7 +139,6 @@ export default function Profile() {
         dateOfBirth: draft.dateOfBirth,
         avatarPreview: draft.avatarUrl,
       });
-      // Support both direct profile or wrapper {profile}
       const updatedProfile = updated?.profile || updated;
       setProfile((p) => ({ ...p, ...updatedProfile }));
       setEditing(false);
@@ -119,71 +147,67 @@ export default function Profile() {
     } finally {
       setSaving(false);
     }
-  };
+  }, [draft]);
 
-  const onAvatarChange = (_file, previewUrl) => {
+  const onAvatarChange = useCallback((_file, previewUrl) => {
     setDraft((d) => ({ ...d, avatarUrl: previewUrl || d.avatarUrl }));
     if (!editing) setEditing(true);
-  };
+  }, [editing]);
 
-  const fieldChange = (key) => (e) => {
+  const fieldChange = useCallback((key) => (e) => {
     const value = e?.target?.value ?? e;
-    setDraft((d) => ({ ...d, [key]: value }));
-  };
+    setDraft((d) => (d[key] === value ? d : { ...d, [key]: value }));
+  }, []);
 
-  const prefToggle = (key) => () => {
-    setDraft((d) => ({
-      ...d,
-      preferences: { ...d.preferences, [key]: !d.preferences[key] },
-    }));
+  const prefToggle = useCallback((key) => () => {
+    setDraft((d) => {
+      const nextVal = !d.preferences[key];
+      return { ...d, preferences: { ...d.preferences, [key]: nextVal } };
+    });
     if (!editing) setEditing(true);
-  };
+  }, [editing]);
 
-  const statCard = (label, value, ariaLabel) => (
-    <div
-      className="glass p-4 rounded-xl shadow-sm flex flex-col items-start gap-1"
-      role="group"
-      aria-label={ariaLabel}
-    >
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className="text-2xl font-semibold text-gray-900">{value}</div>
-    </div>
-  );
-
-  const ProgressBar = ({ percent }) => (
-    <div className="w-full">
-      <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full"
-          style={{
-            width: `${Math.min(Math.max(percent, 0), 100)}%`,
-            backgroundImage: "linear-gradient(90deg, #3b82f6, #6366f1)",
-            transition: "width .3s ease",
-          }}
-          aria-valuenow={percent}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          role="progressbar"
-        />
-      </div>
-    </div>
-  );
-
-  if (loading) {
+  const StatCard = memo(function StatCard({ label, value, ariaLabel }) {
     return (
-      <div className="p-4 md:p-6">
-        <div className="glass p-6 rounded-2xl animate-pulse">
-          <div className="h-6 w-48 bg-gray-200 rounded mb-4" />
-          <div className="h-4 w-full bg-gray-200 rounded mb-2" />
-          <div className="h-4 w-2/3 bg-gray-200 rounded" />
+      <div
+        className="glass p-4 rounded-xl shadow-sm flex flex-col items-start gap-1"
+        role="group"
+        aria-label={ariaLabel}
+      >
+        <div className="text-xs text-gray-500">{label}</div>
+        <div className="text-2xl font-semibold text-gray-900">{value}</div>
+      </div>
+    );
+  });
+
+  const ProgressBar = memo(function ProgressBar({ percent }) {
+    const clamped = Math.min(Math.max(percent, 0), 100);
+    return (
+      <div className="w-full">
+        <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: `${clamped}%`,
+              backgroundImage: "linear-gradient(90deg, #3b82f6, #6366f1)",
+              transition: "width .3s ease",
+            }}
+            aria-valuenow={clamped}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            role="progressbar"
+          />
         </div>
       </div>
     );
+  });
+
+  if (loading) {
+    return <ProfileSkeleton />;
   }
 
   return (
     <div className="p-4 md:p-6 space-y-6" aria-labelledby="profile-title">
-      {/* Header */}
       <header className="flex items-center justify-between">
         <div>
           <h1 id="profile-title" className="text-2xl md:text-3xl font-semibold text-gray-900">
@@ -216,9 +240,7 @@ export default function Profile() {
         </div>
       </header>
 
-      {/* Layout: Left profile card + Right tabs */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Profile Card */}
         <aside className="lg:col-span-1">
           <Card className="glass rounded-2xl p-6">
             <div className="flex items-center gap-4">
@@ -267,9 +289,9 @@ export default function Profile() {
             </div>
 
             <div className="grid grid-cols-3 gap-3 mt-6">
-              {statCard("Courses", profile.stats.courses, "Courses completed")}
-              {statCard("Streak", `${profile.stats.streak}d`, "Learning streak days")}
-              {statCard("Hours", profile.stats.hours, "Hours learned")}
+              <StatCard label="Courses" value={profile.stats.courses} ariaLabel="Courses completed" />
+              <StatCard label="Streak" value={`${profile.stats.streak}d`} ariaLabel="Learning streak days" />
+              <StatCard label="Hours" value={profile.stats.hours} ariaLabel="Hours learned" />
             </div>
 
             {editing ? (
@@ -293,11 +315,10 @@ export default function Profile() {
           )}
         </aside>
 
-        {/* Right Tabs */}
         <section className="lg:col-span-2">
           <div className="glass rounded-2xl p-2">
             <nav className="flex gap-1" role="tablist" aria-label="Profile sections">
-              {tabs.map((t) => {
+              {TABS.map((t) => {
                 const selected = activeTab === t.id;
                 return (
                   <button
@@ -322,7 +343,6 @@ export default function Profile() {
           </div>
 
           <div className="mt-3 glass rounded-2xl p-6">
-            {/* Profile Info Tab */}
             {activeTab === "info" && (
               <div id="panel-info" role="tabpanel" aria-labelledby="tab-info" className="space-y-4">
                 <h2 className="text-lg font-semibold text-gray-900">Personal Information</h2>
@@ -436,7 +456,6 @@ export default function Profile() {
               </div>
             )}
 
-            {/* Learning Progress Tab */}
             {activeTab === "progress" && (
               <div
                 id="panel-progress"
@@ -446,21 +465,9 @@ export default function Profile() {
               >
                 <h2 className="text-lg font-semibold text-gray-900">Learning Progress</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {statCard(
-                    "Completed Courses",
-                    profile.stats.courses || 4,
-                    "Completed courses"
-                  )}
-                  {statCard(
-                    "Active Streak",
-                    `${profile.stats.streak || 7} days`,
-                    "Active streak"
-                  )}
-                  {statCard(
-                    "Total Hours",
-                    profile.stats.hours || 56,
-                    "Total hours learned"
-                  )}
+                  <StatCard label="Completed Courses" value={profile.stats.courses || 4} ariaLabel="Completed courses" />
+                  <StatCard label="Active Streak" value={`${profile.stats.streak || 7} days`} ariaLabel="Active streak" />
+                  <StatCard label="Total Hours" value={profile.stats.hours || 56} ariaLabel="Total hours learned" />
                 </div>
                 <div className="mt-4 space-y-3">
                   {profile.progress.map((p) => (
@@ -476,7 +483,6 @@ export default function Profile() {
               </div>
             )}
 
-            {/* Account Settings Tab */}
             {activeTab === "account" && (
               <div
                 id="panel-account"
@@ -538,7 +544,6 @@ export default function Profile() {
               </div>
             )}
 
-            {/* Security Tab */}
             {activeTab === "security" && (
               <div
                 id="panel-security"
