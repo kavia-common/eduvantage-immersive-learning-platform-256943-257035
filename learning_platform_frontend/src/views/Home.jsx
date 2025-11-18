@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
 import { logger } from "../services/logger";
@@ -213,6 +213,35 @@ export default function Home() {
         onClose={() => setModal({ open: false, title: "", key: "" })}
         title={modal.title}
       >
+        {/* Helper CTA row renderer */}
+        <CTARow
+          modalKey={modal.key}
+          onNavigate={(to) => {
+            // Prefer existing routes; fallback equivalents with TODOs
+            switch (to) {
+              case "classroom":
+                navigate("/classroom");
+                break;
+              case "tutor":
+                // Prefer assistant anchor on dashboard; TODO if dedicated /assistant added later
+                navigate("/dashboard#assistant");
+                break;
+              case "analytics":
+                // Route exists at /analytics; dashboard also acceptable
+                navigate("/analytics");
+                break;
+              case "community":
+                // Prefer /feed; fallback to /feed-demo if needed
+                navigate("/feed");
+                break;
+              default:
+                navigate("/dashboard");
+            }
+            // Close modal after navigation for better UX and to restore scroll
+            setModal({ open: false, title: "", key: "" });
+          }}
+        />
+
         {modal.key === "classroom" && (
           <div>
             <p>
@@ -306,5 +335,69 @@ export default function Home() {
         )}
       </PreviewModal>
     </main>
+  );
+}
+
+/**
+ * PUBLIC_INTERFACE
+ * CTARow - Renders contextual CTA buttons inside the PreviewModal footer area.
+ * Ensures accessible keyboard handling and uses Button component variants.
+ *
+ * Props:
+ * - modalKey: "classroom" | "tutor" | "analytics" | "community"
+ * - onNavigate: (toKey: string) => void
+ */
+function CTARow({ modalKey, onNavigate }) {
+  if (!modalKey) return null;
+
+  // Button specs per modal
+  const map = {
+    classroom: [
+      { label: "Open Classroom", key: "classroom", variant: "primary", aria: "Open full classroom view" },
+    ],
+    tutor: [
+      // Prefer anchor on dashboard for assistant (TODO: switch to /assistant if added later)
+      { label: "Open AI Tutor", key: "tutor", variant: "purple", aria: "Open AI Tutor on dashboard" },
+      { label: "Go to Dashboard", key: "dashboard", variant: "glass", aria: "Open dashboard" },
+    ],
+    analytics: [
+      { label: "View Analytics", key: "analytics", variant: "primary", aria: "Open analytics dashboard" },
+      { label: "Open Main Dashboard", key: "dashboard", variant: "glass", aria: "Open main dashboard" },
+    ],
+    community: [
+      { label: "Open Community Feed", key: "community", variant: "primary", aria: "Open community feed" },
+    ],
+  };
+
+  const items = map[modalKey] || [];
+
+  const onKey = (e, key) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onNavigate?.(key);
+    }
+  };
+
+  return (
+    <div
+      role="group"
+      aria-label="Preview actions"
+      className="mt-2"
+      style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.5rem" }}
+    >
+      {items.map((i) => (
+        <Button
+          key={i.label}
+          variant={i.variant}
+          className="is-interactive"
+          aria-label={i.aria}
+          title={i.label}
+          onClick={() => onNavigate?.(i.key)}
+          onKeyDown={(e) => onKey(e, i.key)}
+        >
+          {i.label}
+        </Button>
+      ))}
+    </div>
   );
 }

@@ -31,6 +31,7 @@ describe("Home CTAs", () => {
           <Route path="/courses" element={<Page label="Courses" />} />
           {/* legacy fallback */}
           <Route path="/feed" element={<Page label="Feed" />} />
+          <Route path="/analytics" element={<Page label="Analytics" />} />
         </Routes>
       </MemoryRouter>
     );
