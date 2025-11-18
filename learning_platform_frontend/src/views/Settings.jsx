@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Card from "../components/common/Card";
+import Button from "../components/common/Button";
 import { settingsService } from "../services/settingsService";
 import { logger } from "../services/logger";
 
@@ -152,9 +153,15 @@ export default function Settings() {
           <p className="mt-1" style={{ color: "var(--color-muted)" }}>
             Current: {settings.theme}
           </p>
-          <button onClick={handleToggleTheme} className="btn mt-2" type="button">
+          <Button
+            onClick={handleToggleTheme}
+            className="mt-2"
+            type="button"
+            variant="purple"
+            aria-label="Toggle application theme"
+          >
             Toggle Theme
-          </button>
+          </Button>
         </section>
 
         <div className="mt-4" />
@@ -215,12 +222,12 @@ export default function Settings() {
         <div className="mt-4" />
 
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <button className="btn" type="button" onClick={handleSave}>
+          <Button variant="primary" type="button" onClick={handleSave} aria-label="Save settings changes">
             Save Changes
-          </button>
-          <button className="btn" type="button" onClick={handleReset}>
+          </Button>
+          <Button variant="warning" type="button" onClick={handleReset} aria-label="Reset settings to defaults">
             Reset to Defaults
-          </button>
+          </Button>
         </div>
       </Card>
     </div>

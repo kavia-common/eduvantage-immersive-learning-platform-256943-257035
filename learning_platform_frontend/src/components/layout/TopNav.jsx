@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./topnav.css";
 import { useAuth } from "../../auth/AuthProvider";
+import Button from "../common/Button";
 
 /**
  * Top navigation with page title, theme toggle, and sign-out when logged in.
@@ -32,13 +33,13 @@ export default function TopNav({ title = "Home", onMenu }) {
       <button className="menu-btn" onClick={onMenu} aria-label="Toggle navigation">☰</button>
       <div className="title">{title}</div>
       <div className="actions">
-        <button className="btn secondary" onClick={toggleTheme} aria-label="Toggle theme">
+        <Button variant="purple" onClick={toggleTheme} aria-label="Toggle theme">
           {theme === "light" ? "🌙 Dark" : "☀️ Light"}
-        </button>
+        </Button>
         {user && (
-          <button className="btn" onClick={onSignOut} aria-label="Sign out" style={{ marginLeft: ".5rem" }}>
+          <Button variant="primary" onClick={onSignOut} aria-label="Sign out" className="" style={{ marginLeft: ".5rem" }}>
             Sign out
-          </button>
+          </Button>
         )}
       </div>
     </header>
