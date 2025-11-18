@@ -44,7 +44,11 @@ function VirtualClassroom({ embedded = false }) {
     } catch {}
     streamRef.current = null;
     if (videoRef.current) {
-      try { videoRef.current.srcObject = null; } catch {}
+      try {
+        const v = videoRef.current;
+        v.onloadedmetadata = null;
+        v.srcObject = null;
+      } catch {}
     }
   };
 
@@ -55,6 +59,28 @@ function VirtualClassroom({ embedded = false }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    // If a stream already exists but the video element ref was re-mounted, reattach.
+    if (videoRef.current && streamRef.current) {
+      try {
+        const videoEl = videoRef.current;
+        if (videoEl.srcObject !== streamRef.current) {
+          videoEl.srcObject = streamRef.current;
+        }
+        const tryPlay = () => {
+          Promise.resolve(videoEl.play()).catch(() => {});
+        };
+        if (videoEl.readyState >= 1) {
+          tryPlay();
+        } else {
+          videoEl.onloadedmetadata = () => tryPlay();
+        }
+      } catch {
+        // no-op
+      }
+    }
+  });
 
   const requestMedia = async () => {
     setMessage('');
@@ -78,7 +104,22 @@ function VirtualClassroom({ embedded = false }) {
       });
       streamRef.current = stream;
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+        // Attach stream to video element and attempt autoplay on metadata loaded
+        const videoEl = videoRef.current;
+        videoEl.srcObject = stream;
+        const tryPlay = () => {
+          // Some browsers require explicit play() call after metadata is ready
+          Promise.resolve(videoEl.play()).catch(() => {
+            // Autoplay might still be blocked if policies change; UI remains usable
+          });
+        };
+        if (videoEl.readyState >= 1) {
+          tryPlay();
+        } else {
+          videoEl.onloadedmetadata = () => {
+            tryPlay();
+          };
+        }
       }
       // Enable tracks according to toggles
       const v = stream.getVideoTracks()[0];
@@ -233,7 +274,7 @@ function VirtualClassroom({ embedded = false }) {
             <div className="vc-connected" aria-label="classroom connected preview">
               <div className="vc-grid" role="grid" aria-label="Seating grid">
                 {/* First tile shows actual camera preview */}
-                <div role="gridcell" className="vc-seat" aria-label="Your seat video">
+                <div role="gridcell" className="vc-seat" aria-label="Your seat video" style={{ position: 'relative' }}>
                   <video
                     ref={videoRef}
                     autoPlay
@@ -242,6 +283,25 @@ function VirtualClassroom({ embedded = false }) {
                     style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10, background: '#000' }}
                     aria-label="Local camera preview"
                   />
+                  {streamRef.current && streamRef.current.getVideoTracks()[0] && streamRef.current.getVideoTracks()[0].readyState !== 'live' && (
+                    <div
+                      className="vc-fallback"
+                      role="status"
+                      aria-live="polite"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#e5e7eb',
+                        fontSize: '0.9rem',
+                        background: 'rgba(0,0,0,0.25)'
+                      }}
+                    >
+                      Camera stream initializing...
+                    </div>
+                  )}
                 </div>
                 {/* Remaining tiles remain placeholders to imply layout */}
                 {Array.from({ length: 8 }).map((_, i) => (
