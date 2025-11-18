@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import './dashboard.css';
 import '../styles/utilities.css';
 import { CourseOverview } from '../components/courses/CourseOverview';
@@ -8,6 +8,8 @@ import { CourseAssignments } from '../components/courses/CourseAssignments';
 import { CourseQuizzes } from '../components/courses/CourseQuizzes';
 import { CourseResources } from '../components/courses/CourseResources';
 import { CourseCard } from '../components/courses/CourseCard';
+import Button from '../components/common/Button';
+import { enrollmentService } from '../services/enrollmentService';
 
 /**
  * PUBLIC_INTERFACE
@@ -135,10 +137,28 @@ export default function Courses({ coursesData }) {
   const courses = useMemo(() => coursesData || defaultCourses, [coursesData]);
   const [selected, setSelected] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [enrolledIds, setEnrolledIds] = useState(() => enrollmentService.getAll());
+  const [banner, setBanner] = useState(null);
+  useEffect(() => {
+    // Hydrate enrolled state on mount or storage changes
+    try {
+      setEnrolledIds(enrollmentService.getAll());
+    } catch {}
+  }, []);
 
   const onSelect = (course) => {
     setSelected(course);
     setActiveTab('overview');
+  };
+
+  const onEnroll = (courseId) => {
+    const res = enrollmentService.enroll(courseId);
+    setEnrolledIds(res.enrolled);
+    setBanner({ type: 'success', text: 'Enrolled successfully! You can start the curriculum now.' });
+    // Auto-hide banner after a short delay
+    setTimeout(() => setBanner(null), 2000);
+    // Optionally move to curriculum tab to begin
+    setActiveTab('curriculum');
   };
 
   const renderTab = () => {
@@ -147,7 +167,7 @@ export default function Courses({ coursesData }) {
       case 'overview':
         return <CourseOverview course={selected} />;
       case 'curriculum':
-        return <CourseCurriculum course={selected} />;
+        return <CourseCurriculum course={selected} isEnrolled={enrolledIds.includes(selected.id)} />;
       case 'instructor':
         return <CourseInstructor course={selected} />;
       case 'assignments':
@@ -200,6 +220,34 @@ export default function Courses({ coursesData }) {
               <p style={{ margin: '0.25rem 0', color: '#4b5563' }}>
                 {selected.category} • {selected.level} • {selected.duration}
               </p>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                {!enrolledIds.includes(selected.id) ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    aria-label={`Enroll in ${selected.title}`}
+                    onClick={() => onEnroll(selected.id)}
+                  >
+                    Enroll Now
+                  </Button>
+                ) : (
+                  <span className="glass" style={{ padding: '0.25rem 0.5rem', borderRadius: 8, fontSize: 12, color: '#065f46', background: 'rgba(16,185,129,0.12)' }}>
+                    Enrolled
+                  </span>
+                )}
+                {banner && banner.type === 'success' && (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className="glass"
+                    data-testid="enroll-success-banner"
+                    style={{ padding: '0.4rem 0.6rem', borderRadius: 8, fontSize: 12, color: '#065f46', background: 'rgba(16,185,129,0.12)' }}
+                  >
+                    {banner.text}
+                  </div>
+                )}
+              </div>
             </header>
 
             <nav

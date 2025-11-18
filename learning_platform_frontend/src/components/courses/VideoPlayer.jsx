@@ -1,11 +1,17 @@
 import React from 'react';
+import Button from '../common/Button';
 
 /**
  * PUBLIC_INTERFACE
  * VideoPlayer is a simple placeholder video player component.
  * It renders a native HTML5 video element with accessible labeling.
  */
-export function VideoPlayer({ src, caption }) {
+/**
+ * PUBLIC_INTERFACE
+ * @param {{ src: string, caption?: string, onComplete?: () => void }} props
+ * Renders a player and an optional Mark Complete button if onComplete is provided.
+ */
+export function VideoPlayer({ src, caption, onComplete }) {
   return (
     <figure className="glass" style={{ borderRadius: 12, overflow: 'hidden', margin: 0 }}>
       <video
@@ -18,6 +24,13 @@ export function VideoPlayer({ src, caption }) {
         <figcaption style={{ padding: '0.5rem 0.75rem', fontSize: 14, color: '#4b5563' }}>
           {caption}
         </figcaption>
+      )}
+      {typeof onComplete === 'function' && (
+        <div style={{ padding: '0.5rem 0.75rem' }}>
+          <Button variant="success" size="sm" aria-label="Mark video complete" onClick={() => onComplete?.()}>
+            Mark Complete
+          </Button>
+        </div>
       )}
     </figure>
   );
