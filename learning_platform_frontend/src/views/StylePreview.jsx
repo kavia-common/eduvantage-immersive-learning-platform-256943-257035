@@ -20,7 +20,7 @@ export default function StylePreview() {
       </div>
 
       <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-        <Button>Primary</Button>
+        <Button variant="primary">Primary</Button>
         <Button variant="secondary">Secondary</Button>
         <Button variant="glass">Glass Button</Button>
         <Button variant="glassDark">Glass Dark Button</Button>

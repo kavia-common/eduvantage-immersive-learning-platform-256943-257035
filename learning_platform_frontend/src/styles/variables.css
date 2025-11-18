@@ -25,6 +25,23 @@
   --topnav-height: 64px;
 
   --transition-soft: 200ms ease;
+
+  /* Button Theme Tokens (centralized) */
+  --btn-primary-bg: #2563EB;
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: #2563EB;
+  --btn-primary-hover: #2056cc; /* ~8% darker */
+  --btn-primary-active: #1c4db8; /* ~10% darker */
+  --btn-primary-focus: rgba(37, 99, 235, 0.5);
+
+  --btn-secondary-bg: #F59E0B;
+  --btn-secondary-text: #111827;
+  --btn-secondary-border: #F59E0B;
+  --btn-secondary-hover: #dd8e09; /* ~8% darker */
+  --btn-secondary-active: #c98007; /* ~10% darker */
+  --btn-secondary-focus: rgba(245, 158, 11, 0.45);
+
+  --btn-disabled-opacity: 0.6;
 }
 [data-theme="dark"] {
   --color-surface: #0f172a; /* slate-900 */
@@ -36,4 +53,8 @@
   --shadow-md: 0 6px 16px rgba(0,0,0,0.35);
   --shadow-lg: 0 12px 28px rgba(0,0,0,0.45);
   --gradient-soft: linear-gradient(135deg, rgba(37,99,235,0.15), rgba(2,6,23,0.6));
+
+  /* Preserve accessible focus rings in dark mode */
+  --btn-primary-focus: rgba(37, 99, 235, 0.55);
+  --btn-secondary-focus: rgba(245, 158, 11, 0.5);
 }

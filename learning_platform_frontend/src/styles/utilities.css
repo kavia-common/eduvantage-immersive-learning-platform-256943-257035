@@ -138,16 +138,28 @@
 .btn-lg { padding: 0.75rem 1rem; border-radius: 12px; font-weight: 600; }
 .btn-xl { padding: 0.9rem 1.1rem; border-radius: 14px; font-weight: 600; }
 
-.btn-gradient-primary { background-image: linear-gradient(135deg, #3b82f6, #2563EB); color: #fff; }
-.btn-gradient-success { background-image: linear-gradient(135deg, #10b981, #F59E0B); color: #0b1b2a; }
+/* Tokenized base variants (no hardcoded colors) */
+.btn-primary { background-color: var(--btn-primary-bg); color: var(--btn-primary-text); border-color: var(--btn-primary-border); }
+.btn-primary:hover { background-color: var(--btn-primary-hover); }
+.btn-primary:active { background-color: var(--btn-primary-active); }
+.btn-primary:focus-visible { box-shadow: 0 0 0 2px rgba(255,255,255,0.9), 0 0 0 4px var(--btn-primary-focus); }
+
+.btn-secondary { background-color: var(--btn-secondary-bg); color: var(--btn-secondary-text); border-color: var(--btn-secondary-border); }
+.btn-secondary:hover { background-color: var(--btn-secondary-hover); }
+.btn-secondary:active { background-color: var(--btn-secondary-active); }
+.btn-secondary:focus-visible { box-shadow: 0 0 0 2px rgba(255,255,255,0.9), 0 0 0 4px var(--btn-secondary-focus); }
+
+/* Backward compatible gradient classes */
+.btn-gradient-primary { background-image: linear-gradient(135deg, #3b82f6, var(--btn-primary-bg)); color: #fff; }
+.btn-gradient-success { background-image: linear-gradient(135deg, #10b981, var(--color-secondary)); color: #0b1b2a; }
 .btn-gradient-danger { background-image: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
-.btn-gradient-warning { background-image: linear-gradient(135deg, #f59e0b, #f97316); color: #111827; }
+.btn-gradient-warning { background-image: linear-gradient(135deg, var(--color-secondary), #f97316); color: var(--color-text); }
 .btn-gradient-purple { background-image: linear-gradient(135deg, #8b5cf6, #4f46e5); color: #fff; }
 
-.btn-glass { background: rgba(255,255,255,0.65); color: #111827; }
+.btn-glass { background: rgba(255,255,255,0.65); color: var(--color-text); }
 .btn-glass-dark { background: rgba(17,24,39,0.35); color: #f3f4f6; }
 
-.btn-disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-disabled { opacity: var(--btn-disabled-opacity, 0.6); cursor: not-allowed; pointer-events: none; }
 
 .btn:hover { filter: brightness(1.03); }
 

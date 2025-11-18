@@ -42,7 +42,10 @@ export default function Button({
   // Variant classes
   switch (variant) {
     case "primary":
-      classes.push("btn-gradient-primary");
+      classes.push("btn-primary");
+      break;
+    case "secondary":
+      classes.push("btn-secondary");
       break;
     case "success":
       classes.push("btn-gradient-success");
