@@ -165,7 +165,12 @@ export default function Dashboard() {
                   <div style={{ fontWeight: 600 }}>{qa.label}</div>
                 </div>
                 <Link to={qa.to} aria-label={qa.aria} title={qa.label}>
-                  <Button variant="glass" className="is-interactive">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="is-interactive"
+                    aria-label={`Open: ${qa.label}`}
+                  >
                     Open
                   </Button>
                 </Link>
@@ -181,7 +186,7 @@ export default function Dashboard() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", marginBottom: "0.5rem" }}>
             <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Virtual Classroom</h2>
             <Link to="/classroom" aria-label="Open full classroom view" title="Open full classroom view">
-              <Button variant="glass" className="is-interactive">Open</Button>
+              <Button variant="primary" size="sm" className="is-interactive">Open</Button>
             </Link>
           </div>
           <VirtualClassroom embedded />
@@ -237,7 +242,7 @@ export default function Dashboard() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", marginBottom: "0.5rem" }}>
             <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Wellbeing</h2>
             <Link to="/wellbeing" aria-label="Open full wellbeing view" title="Open full wellbeing view">
-              <Button variant="glass" className="is-interactive">Open</Button>
+              <Button variant="primary" size="sm" className="is-interactive">Open</Button>
             </Link>
           </div>
           <WellbeingDashboard />
@@ -250,7 +255,7 @@ export default function Dashboard() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", marginBottom: "0.5rem" }}>
             <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Community Feed</h2>
             <Link to="/feed" aria-label="Open full social feed" title="Open full social feed">
-              <Button variant="glass" className="is-interactive">Open</Button>
+              <Button variant="primary" size="sm" className="is-interactive">Open</Button>
             </Link>
           </div>
           {/* Lightweight sample feed list */}
@@ -263,8 +268,8 @@ export default function Dashboard() {
               </header>
               <div className="mt-2">Just completed the Algebra mastery quiz with 95%!</div>
               <div className="mt-2" style={{ display: "flex", gap: ".5rem" }}>
-                <Button variant="glass" className="is-interactive" aria-label="Like post">👍 Like (12)</Button>
-                <Button variant="glass" className="is-interactive" aria-label="Comment on post">💬 Comment (4)</Button>
+                <Button variant="purple" size="sm" className="is-interactive" aria-label="Like post">👍 Like (12)</Button>
+                <Button variant="warning" size="sm" className="is-interactive" aria-label="Comment on post">💬 Comment (4)</Button>
               </div>
             </article>
             <article className="surface glass-sm" style={{ padding: ".75rem" }} aria-label="Post by Noah Kim">
@@ -275,8 +280,8 @@ export default function Dashboard() {
               </header>
               <div className="mt-2">Study group tonight at 7pm for Biology. Drop your questions!</div>
               <div className="mt-2" style={{ display: "flex", gap: ".5rem" }}>
-                <Button variant="glass" className="is-interactive" aria-label="Like post">👍 Like (7)</Button>
-                <Button variant="glass" className="is-interactive" aria-label="Comment on post">💬 Comment (9)</Button>
+                <Button variant="purple" size="sm" className="is-interactive" aria-label="Like post">👍 Like (7)</Button>
+                <Button variant="warning" size="sm" className="is-interactive" aria-label="Comment on post">💬 Comment (9)</Button>
               </div>
             </article>
           </div>
@@ -310,7 +315,7 @@ function PreviewCard({ title, description, to, cta, emoji }) {
       <div className="glass-divider" style={{ margin: "0.6rem 0" }} />
       <div style={{ marginLeft: "auto" }}>
         <Link to={to} aria-label={cta} title={cta}>
-          <Button variant="glass" className="is-interactive">
+          <Button variant="primary" size="sm" className="is-interactive">
             {cta}
           </Button>
         </Link>

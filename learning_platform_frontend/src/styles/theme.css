@@ -44,24 +44,113 @@ a {
   appearance: none;
   border: none;
   border-radius: var(--radius-md);
-  padding: 0.6rem 1rem;
-  font-weight: 600;
-  color: white;
-  background: var(--color-primary);
+  font-weight: 700;
+  color: #ffffff;
   cursor: pointer;
-  transition: transform var(--transition-soft), box-shadow var(--transition-soft), opacity var(--transition-soft);
-  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
+  user-select: none;
+  position: relative;
+  transition: transform var(--transition-soft), box-shadow var(--transition-soft), opacity var(--transition-soft), filter 160ms ease;
+  outline: none;
+  border: 1px solid transparent;
 }
-.btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.28);
-}
+
+/* Sizes */
+.btn-sm { padding: 0.35rem 0.6rem; font-size: 0.85rem; border-radius: 10px; }
+.btn-md { padding: 0.55rem 0.9rem; font-size: 0.95rem; border-radius: 12px; }
+.btn-lg { padding: 0.7rem 1.1rem; font-size: 1rem; border-radius: 12px; }
+.btn-xl { padding: 0.9rem 1.25rem; font-size: 1.05rem; border-radius: 14px; }
+
+/* General hover/active */
+.btn:hover { transform: translateY(-1px); }
 .btn:active { transform: translateY(0); }
 
-.btn.secondary {
-  background: var(--color-secondary);
-  box-shadow: 0 6px 14px rgba(245, 158, 11, 0.25);
+/* Focus-visible accessible ring */
+.btn:focus-visible {
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,0.9),
+    0 0 0 4px color-mix(in oklab, var(--color-primary, #2563EB) 60%, transparent);
 }
+
+/* Disabled */
+.btn:disabled,
+.btn.btn-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(8%);
+  transform: none;
+  box-shadow: none;
+}
+
+/* Gradient Variants */
+.btn-gradient-primary {
+  background-image: linear-gradient(135deg, #3b82f6, #2563eb);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+}
+.btn-gradient-primary:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.34);
+}
+
+.btn-gradient-success {
+  background-image: linear-gradient(135deg, #14b8a6, #0ea5e9);
+  box-shadow: 0 8px 18px rgba(20, 184, 166, 0.25);
+}
+.btn-gradient-success:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 10px 22px rgba(14, 165, 233, 0.32);
+}
+
+.btn-gradient-danger {
+  background-image: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 8px 18px rgba(239, 68, 68, 0.25);
+}
+.btn-gradient-danger:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 10px 22px rgba(220, 38, 38, 0.32);
+}
+
+.btn-gradient-warning {
+  background-image: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #1f2937;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.25);
+  box-shadow: 0 8px 18px rgba(245, 158, 11, 0.25);
+}
+.btn-gradient-warning:hover {
+  filter: brightness(1.04);
+  box-shadow: 0 10px 22px rgba(245, 158, 11, 0.32);
+}
+
+.btn-gradient-purple {
+  background-image: linear-gradient(135deg, #8b5cf6, #4f46e5);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.30);
+}
+.btn-gradient-purple:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 10px 24px rgba(99, 102, 241, 0.36);
+}
+
+/* Glass button variants (blend with glass utilities) */
+.btn-glass {
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--color-primary, #2563EB) 10%, transparent) 0%,
+    color-mix(in oklab, var(--color-surface, #ffffff) 88%, transparent) 100%
+  );
+  color: #0f172a;
+  border-color: color-mix(in oklab, var(--color-primary, #2563EB) 22%, var(--color-surface, #ffffff));
+  box-shadow: 0 6px 16px rgba(2, 6, 23, 0.08);
+}
+.btn-glass:hover { box-shadow: 0 10px 22px rgba(2, 6, 23, 0.10); }
+
+.btn-glass-dark {
+  background: linear-gradient(135deg,
+    color-mix(in oklab, var(--color-primary, #2563EB) 16%, transparent) 0%,
+    color-mix(in oklab, var(--color-background, #0b1220) 84%, transparent) 100%
+  );
+  color: #e5e7eb;
+  border-color: color-mix(in oklab, var(--color-secondary, #F59E0B) 18%, var(--color-background, #0b1220));
+  box-shadow: 0 8px 22px rgba(0,0,0,0.28);
+}
+.btn-glass-dark:hover { box-shadow: 0 10px 26px rgba(0,0,0,0.34); }
 
 .gradient-bg {
   background: var(--gradient-soft);

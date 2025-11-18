@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './virtualClassroom.css';
+import Button from './common/Button';
 
 /**
  * PUBLIC_INTERFACE
@@ -216,21 +217,25 @@ function VirtualClassroom({ embedded = false }) {
         </div>
         <div className="vc-actions">
           {!isConnected ? (
-            <button
-              className="vc-btn vc-primary"
+            <Button
+              variant="primary"
+              size="sm"
               onClick={handleJoin}
               aria-label="Join Classroom"
+              title="Join Classroom"
             >
               Join Classroom
-            </button>
+            </Button>
           ) : (
-            <button
-              className="vc-btn vc-danger"
+            <Button
+              variant="danger"
+              size="sm"
               onClick={handleLeave}
               aria-label="Leave"
+              title="Leave"
             >
               Leave
-            </button>
+            </Button>
           )}
         </div>
       </header>
@@ -317,7 +322,9 @@ function VirtualClassroom({ embedded = false }) {
 
       <footer className="vc-controls">
         <div className="vc-controls-group" role="group" aria-label="Media controls">
-          <button
+          <Button
+            variant="glass"
+            size="sm"
             className={`vc-icon-btn ${cameraOn ? '' : 'off'}`}
             onClick={handleToggleCamera}
             aria-label={cameraOn ? 'Turn camera off' : 'Turn camera on'}
@@ -325,8 +332,10 @@ function VirtualClassroom({ embedded = false }) {
             disabled={!isConnected || status !== 'ready'}
           >
             {cameraOn ? '📷' : '🚫📷'}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="glass"
+            size="sm"
             className={`vc-icon-btn ${micOn ? '' : 'off'}`}
             onClick={handleToggleMic}
             aria-label={micOn ? 'Mute microphone' : 'Unmute microphone'}
@@ -334,7 +343,7 @@ function VirtualClassroom({ embedded = false }) {
             disabled={!isConnected || status !== 'ready'}
           >
             {micOn ? '🎙️' : '🔇'}
-          </button>
+          </Button>
         </div>
         <div className="vc-hint" aria-live="polite">
           {hint}

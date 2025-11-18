@@ -94,7 +94,7 @@ function LearningAssistant() {
         {suggestions.map((s, idx) => (
           <Button
             key={idx}
-            variant="secondary"
+            variant="glass"
             size="sm"
             className="suggestion-btn"
             aria-label={`Suggestion: ${s}`}
@@ -115,6 +115,7 @@ function LearningAssistant() {
         />
         <Button
           variant="primary"
+          size="sm"
           aria-label="Send message"
           title="Send"
           disabled
