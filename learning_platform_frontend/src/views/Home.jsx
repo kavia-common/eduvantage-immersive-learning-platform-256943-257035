@@ -150,7 +150,7 @@ export default function Home() {
 
               <Button
                 variant="glass"
-                className="is-interactive"
+                className="is-interactive gradient-cyan-blue"
                 onClick={onExplore}
                 onKeyDown={handleExploreKey}
                 aria-label="Explore Courses"

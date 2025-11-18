@@ -68,7 +68,7 @@ export default function FeatureCard3D({ title, description, emoji, onPreview }) 
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
           <Button
             variant="glass"
-            className="is-interactive"
+            className="is-interactive gradient-purple-indigo"
             aria-label={`Live Preview ${title}`}
             onClick={onPreview}
           >

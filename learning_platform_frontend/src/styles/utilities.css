@@ -111,6 +111,32 @@
 .animate-float { animation: float 4s ease-in-out infinite alternate; }
 .animate-pulse { animation: pulse-soft 3s ease-in-out infinite; }
 
+/* Gradient button utility tweaks (non-intrusive, layered under .glass) */
+.gradient-purple-indigo {
+  background-image: linear-gradient(135deg, #8b5cf6, #4f46e5);
+  color: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.30);
+}
+.gradient-purple-indigo:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 10px 24px rgba(99, 102, 241, 0.36);
+}
+.gradient-cyan-blue {
+  background-image: linear-gradient(135deg, #06b6d4, #3b82f6);
+  color: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.28);
+}
+.gradient-cyan-blue:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.34);
+}
+
+/* Ensure gradients play nicely with glass by keeping borders subtle */
+.glass.gradient-purple-indigo,
+.glass.gradient-cyan-blue {
+  border-color: color-mix(in oklab, var(--color-surface, #ffffff) 70%, transparent);
+}
+
 /* Stagger helpers */
 .delay-100 { animation-delay: 100ms; }
 .delay-200 { animation-delay: 200ms; }
