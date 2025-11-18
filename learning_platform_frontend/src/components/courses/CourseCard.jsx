@@ -43,7 +43,8 @@ export function CourseCard({ course, onSelect, isActive }) {
       <div style={{ padding: '0.75rem', display: 'grid', gap: '0.25rem', flex: 1 }}>
         <h3 style={{ margin: 0, fontSize: 16 }}>{course.title}</h3>
         <p style={{ margin: 0, color: '#4b5563', fontSize: 13 }}>
-          {course.category} • {course.level} • {course.duration}
+          {course.category} • {course.level} • {course.duration}{' '}
+          {typeof course.price !== 'undefined' ? `• $${course.price}` : ''}
         </p>
         <p style={{ margin: '0.25rem 0 0', color: '#374151', fontSize: 14 }}>
           ⭐ {course.rating} • {course.lessonsCount} lessons

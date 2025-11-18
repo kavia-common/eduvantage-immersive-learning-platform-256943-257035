@@ -29,6 +29,9 @@ import { settingsStorage } from '../services/settingsStorage';
  * Filters/Sorting:
  * - Search by title/description/instructor
  * - Multi-select Category and Level filters
+ * - NEW: Instructor multi-select derived from data
+ * - NEW: Price range (min/max)
+ * - NEW: Duration range (in minutes; accepts “h/m” or “X weeks” parsing)
  * - Sort by rating, price (if present), duration (hh/mm), popularity (students), title A–Z
  */
 
@@ -46,6 +49,8 @@ export const coursesData = [
     duration: '6h 30m',
     lessonsCount: 24,
     rating: 4.7,
+    students: 1500,
+    price: 0,
     instructor: {
       name: 'Alex Rivera',
       title: 'Senior Frontend Engineer',
@@ -104,6 +109,8 @@ export const coursesData = [
     duration: '8h 10m',
     lessonsCount: 30,
     rating: 4.6,
+    students: 2200,
+    price: 79,
     instructor: {
       name: 'Priya Shah',
       title: 'Backend Architect',
@@ -158,15 +165,37 @@ export default function Courses({ coursesData: overrideData }) {
   const [selectedLevels, setSelectedLevels] = useState([]);
   const [sortKey, setSortKey] = useState('rating_desc'); // default sort
 
+  // NEW: facet state
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
+  const [durationMin, setDurationMin] = useState(''); // minutes
+  const [durationMax, setDurationMax] = useState(''); // minutes
+  const [selectedInstructors, setSelectedInstructors] = useState([]);
+
   // Hydrate from settingsStorage (optional persistence)
   useEffect(() => {
     const settings = settingsStorage.get();
     if (settings?.[STORAGE_SECTION]) {
-      const { query: q, selectedCategories: c, selectedLevels: l, sortKey: s } = settings[STORAGE_SECTION];
+      const {
+        query: q,
+        selectedCategories: c,
+        selectedLevels: l,
+        sortKey: s,
+        priceMin: pmin,
+        priceMax: pmax,
+        durationMin: dmin,
+        durationMax: dmax,
+        selectedInstructors: si,
+      } = settings[STORAGE_SECTION];
       if (typeof q === 'string') setQuery(q);
       if (Array.isArray(c)) setSelectedCategories(c);
       if (Array.isArray(l)) setSelectedLevels(l);
       if (typeof s === 'string') setSortKey(s);
+      if (pmin !== undefined) setPriceMin(String(pmin));
+      if (pmax !== undefined) setPriceMax(String(pmax));
+      if (dmin !== undefined) setDurationMin(String(dmin));
+      if (dmax !== undefined) setDurationMax(String(dmax));
+      if (Array.isArray(si)) setSelectedInstructors(si);
     }
   }, []);
 
@@ -180,10 +209,15 @@ export default function Courses({ coursesData: overrideData }) {
         selectedCategories,
         selectedLevels,
         sortKey,
+        priceMin,
+        priceMax,
+        durationMin,
+        durationMax,
+        selectedInstructors,
       },
     };
     settingsStorage.set(next);
-  }, [query, selectedCategories, selectedLevels, sortKey]);
+  }, [query, selectedCategories, selectedLevels, sortKey, priceMin, priceMax, durationMin, durationMax, selectedInstructors]);
 
   useEffect(() => {
     // Hydrate enrolled state on mount or storage changes
@@ -202,15 +236,36 @@ export default function Courses({ coursesData: overrideData }) {
     [courses]
   );
 
+  const allInstructors = useMemo(
+    () => Array.from(new Set((courses || []).map(c => c?.instructor?.name).filter(Boolean))).sort(),
+    [courses]
+  );
+
   // Helpers
   const parseDurationToMinutes = (dur) => {
-    // Accept formats like "6h 30m", "8h", "45m"
-    if (!dur || typeof dur !== 'string') return 0;
-    const h = /([0-9]+)\s*h/i.exec(dur)?.[1];
-    const m = /([0-9]+)\s*m/i.exec(dur)?.[1];
-    const hours = h ? parseInt(h, 10) : 0;
-    const mins = m ? parseInt(m, 10) : 0;
-    return hours * 60 + mins;
+    // Accept formats like "6h 30m", "8h", "45m", or "8 weeks"
+    if (!dur) return 0;
+    if (typeof dur === 'number') return dur;
+    if (typeof dur === 'string') {
+      const weeks = /([0-9]+)\s*week/i.exec(dur)?.[1];
+      if (weeks) {
+        const w = parseInt(weeks, 10);
+        // Assume 1 week ~ 7 days * 24h -> minutes
+        return w * 7 * 24 * 60;
+      }
+      const h = /([0-9]+)\s*h/i.exec(dur)?.[1];
+      const m = /([0-9]+)\s*m/i.exec(dur)?.[1];
+      const hours = h ? parseInt(h, 10) : 0;
+      const mins = m ? parseInt(m, 10) : 0;
+      return hours * 60 + mins;
+    }
+    return 0;
+  };
+
+  const toNumberOr = (v, fallback = undefined) => {
+    if (v === '' || v === null || v === undefined) return fallback;
+    const n = Number(v);
+    return Number.isNaN(n) ? fallback : n;
   };
 
   const compareString = (a = '', b = '') => a.localeCompare(b, undefined, { sensitivity: 'base' });
@@ -218,6 +273,11 @@ export default function Courses({ coursesData: overrideData }) {
   // Derived filtered + sorted list
   const visibleCourses = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const pmin = toNumberOr(priceMin, undefined);
+    const pmax = toNumberOr(priceMax, undefined);
+    const dmin = toNumberOr(durationMin, undefined);
+    const dmax = toNumberOr(durationMax, undefined);
+
     const matchQuery = (c) => {
       if (!q) return true;
       const hay = [
@@ -231,8 +291,30 @@ export default function Courses({ coursesData: overrideData }) {
     };
     const matchCategory = (c) => selectedCategories.length === 0 || selectedCategories.includes(c.category);
     const matchLevel = (c) => selectedLevels.length === 0 || selectedLevels.includes(c.level);
+    const matchInstructor = (c) =>
+      selectedInstructors.length === 0 || selectedInstructors.includes(c?.instructor?.name);
+    const matchPrice = (c) => {
+      const val = toNumberOr(c.price ?? 0, 0);
+      if (pmin !== undefined && val < pmin) return false;
+      if (pmax !== undefined && val > pmax) return false;
+      return true;
+    };
+    const matchDuration = (c) => {
+      const mins = parseDurationToMinutes(c.duration);
+      if (dmin !== undefined && mins < dmin) return false;
+      if (dmax !== undefined && mins > dmax) return false;
+      return true;
+    };
 
-    const filtered = (courses || []).filter(c => matchQuery(c) && matchCategory(c) && matchLevel(c));
+    const filtered = (courses || []).filter(
+      (c) =>
+        matchQuery(c) &&
+        matchCategory(c) &&
+        matchLevel(c) &&
+        matchInstructor(c) &&
+        matchPrice(c) &&
+        matchDuration(c)
+    );
 
     const by = (key) => {
       switch (key) {
@@ -260,7 +342,7 @@ export default function Courses({ coursesData: overrideData }) {
     };
 
     return filtered.slice().sort(by(sortKey));
-  }, [courses, query, selectedCategories, selectedLevels, sortKey]);
+  }, [courses, query, selectedCategories, selectedLevels, selectedInstructors, priceMin, priceMax, durationMin, durationMax, sortKey]);
 
   const onSelect = (course) => {
     setSelected(course);
@@ -377,7 +459,7 @@ export default function Courses({ coursesData: overrideData }) {
           <fieldset
             aria-labelledby="category-legend"
             className="glass"
-            style={{ padding: '0.5rem 0.75rem', borderRadius: 8, minWidth: 240, border: '1px solid rgba(0,0,0,0.06)' }}
+            style={{ padding: '0.5rem 0.75rem', borderRadius: 8, minWidth: 220, border: '1px solid rgba(0,0,0,0.06)' }}
           >
             <legend id="category-legend" style={{ fontSize: 13, color: '#4b5563' }}>Categories</legend>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -405,7 +487,7 @@ export default function Courses({ coursesData: overrideData }) {
           <fieldset
             aria-labelledby="level-legend"
             className="glass"
-            style={{ padding: '0.5rem 0.75rem', borderRadius: 8, minWidth: 240, border: '1px solid rgba(0,0,0,0.06)' }}
+            style={{ padding: '0.5rem 0.75rem', borderRadius: 8, minWidth: 200, border: '1px solid rgba(0,0,0,0.06)' }}
           >
             <legend id="level-legend" style={{ fontSize: 13, color: '#4b5563' }}>Levels</legend>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -429,6 +511,123 @@ export default function Courses({ coursesData: overrideData }) {
             </div>
           </fieldset>
 
+          {/* Instructor filter */}
+          <fieldset
+            aria-labelledby="instructor-legend"
+            className="glass"
+            style={{ padding: '0.5rem 0.75rem', borderRadius: 8, minWidth: 220, border: '1px solid rgba(0,0,0,0.06)' }}
+          >
+            <legend id="instructor-legend" style={{ fontSize: 13, color: '#4b5563' }}>Instructors</legend>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', maxWidth: 420 }}>
+              {allInstructors.map((name) => {
+                const id = `instr-${name}`;
+                const checked = selectedInstructors.includes(name);
+                return (
+                  <label key={name} htmlFor={id} className="is-interactive" style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center' }}>
+                    <input
+                      id={id}
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => setSelectedInstructors(prev => toggleInArray(prev, name))}
+                      aria-checked={checked}
+                    />
+                    <span>{name}</span>
+                  </label>
+                );
+              })}
+              {allInstructors.length === 0 && <span style={{ color: '#6b7280' }}>No instructors</span>}
+            </div>
+          </fieldset>
+
+          {/* Price range */}
+          <fieldset
+            aria-labelledby="price-legend"
+            className="glass"
+            style={{ padding: '0.5rem 0.75rem', borderRadius: 8, minWidth: 220, border: '1px solid rgba(0,0,0,0.06)' }}
+          >
+            <legend id="price-legend" style={{ fontSize: 13, color: '#4b5563' }}>Price range</legend>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ minWidth: 90 }}>
+                <label htmlFor="price-min" className="sr-only">Minimum price</label>
+                <input
+                  id="price-min"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  placeholder="Min"
+                  aria-label="Minimum price"
+                  value={priceMin}
+                  onChange={(e) => setPriceMin(e.target.value)}
+                  className="glass"
+                  style={{ width: '100%', padding: '0.4rem 0.5rem', borderRadius: 6 }}
+                />
+              </div>
+              <span aria-hidden="true">–</span>
+              <div style={{ minWidth: 90 }}>
+                <label htmlFor="price-max" className="sr-only">Maximum price</label>
+                <input
+                  id="price-max"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  placeholder="Max"
+                  aria-label="Maximum price"
+                  value={priceMax}
+                  onChange={(e) => setPriceMax(e.target.value)}
+                  className="glass"
+                  style={{ width: '100%', padding: '0.4rem 0.5rem', borderRadius: 6 }}
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          {/* Duration range (minutes) */}
+          <fieldset
+            aria-labelledby="duration-legend"
+            className="glass"
+            style={{ padding: '0.5rem 0.75rem', borderRadius: 8, minWidth: 240, border: '1px solid rgba(0,0,0,0.06)' }}
+          >
+            <legend id="duration-legend" style={{ fontSize: 13, color: '#4b5563' }}>Duration (minutes)</legend>
+            <div id="duration-help" style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+              You can filter by total minutes. Durations like “8 weeks” are parsed to minutes automatically.
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ minWidth: 90 }}>
+                <label htmlFor="duration-min" className="sr-only">Minimum duration in minutes</label>
+                <input
+                  id="duration-min"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  placeholder="Min"
+                  aria-label="Minimum duration in minutes"
+                  aria-describedby="duration-help"
+                  value={durationMin}
+                  onChange={(e) => setDurationMin(e.target.value)}
+                  className="glass"
+                  style={{ width: '100%', padding: '0.4rem 0.5rem', borderRadius: 6 }}
+                />
+              </div>
+              <span aria-hidden="true">–</span>
+              <div style={{ minWidth: 90 }}>
+                <label htmlFor="duration-max" className="sr-only">Maximum duration in minutes</label>
+                <input
+                  id="duration-max"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  placeholder="Max"
+                  aria-label="Maximum duration in minutes"
+                  aria-describedby="duration-help"
+                  value={durationMax}
+                  onChange={(e) => setDurationMax(e.target.value)}
+                  className="glass"
+                  style={{ width: '100%', padding: '0.4rem 0.5rem', borderRadius: 6 }}
+                />
+              </div>
+            </div>
+          </fieldset>
+
           {/* Clear filters button */}
           <div style={{ marginLeft: 'auto' }}>
             <Button
@@ -438,6 +637,11 @@ export default function Courses({ coursesData: overrideData }) {
                 setQuery('');
                 setSelectedCategories([]);
                 setSelectedLevels([]);
+                setSelectedInstructors([]);
+                setPriceMin('');
+                setPriceMax('');
+                setDurationMin('');
+                setDurationMax('');
                 setSortKey('rating_desc');
               }}
             >
