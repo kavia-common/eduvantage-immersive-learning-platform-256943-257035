@@ -23,6 +23,7 @@ const Career = lazy(() => import("../views/Career"));
 const StylePreview = lazy(() => import("../views/StylePreview"));
 const FeedDemo = lazy(() => import("../views/FeedDemo"));
 const Courses = lazy(() => import("../views/Courses"));
+const CourseDetailPage = lazy(() => import("../views/CourseDetailPage")); // new route
 
 /**
  * PUBLIC_INTERFACE
@@ -52,6 +53,8 @@ export function PrefetchProfileOnIdle() {
   return null;
 }
 
+// PUBLIC_INTERFACE
+// Routes array used by the App to render <Routes>. Keep order meaningful for aliases and 404.
 export const routes = [
   // Core public page
   { path: "/", element: <Home />, label: "Home", icon: "🏠" },
@@ -92,6 +95,12 @@ export const routes = [
     element: <Courses />,
     label: "Courses",
     icon: "🎓",
+  },
+  {
+    // New dynamic course detail route
+    path: "/courses/:id",
+    element: <CourseDetailPage />,
+    label: "Course Detail",
   },
   {
     path: "/feed",
@@ -163,5 +172,8 @@ export const routes = [
  * Filtered routes used in the sidebar navigation (excludes auth/utility routes).
  */
 export const navRoutes = routes.filter(
-  (r) => r.label && r.path && !["/home", "*", "/login", "/signup", "/auth/callback", "/style-preview"].includes(r.path)
+  (r) =>
+    r.label &&
+    r.path &&
+    !["/home", "*", "/login", "/signup", "/auth/callback", "/style-preview", "/courses/:id"].includes(r.path)
 );

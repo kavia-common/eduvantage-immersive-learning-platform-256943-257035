@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './dashboard.css';
 import '../styles/utilities.css';
+import { useNavigate } from 'react-router-dom';
 import { CourseOverview } from '../components/courses/CourseOverview';
 import { CourseCurriculum } from '../components/courses/CourseCurriculum';
 import { CourseInstructor } from '../components/courses/CourseInstructor';
@@ -25,7 +26,8 @@ import { enrollmentService } from '../services/enrollmentService';
  * - Uses existing .glass classes and shared Button variants from components/common/Button
  */
 
-const defaultCourses = [
+// PUBLIC_INTERFACE
+export const coursesData = [
   {
     id: 'react-101',
     title: 'React 101: Fundamentals',
@@ -133,12 +135,14 @@ const TABS = [
   { key: 'resources', label: 'Resources' },
 ];
 
-export default function Courses({ coursesData }) {
-  const courses = useMemo(() => coursesData || defaultCourses, [coursesData]);
+export default function Courses({ coursesData: overrideData }) {
+  const navigate = useNavigate();
+  const courses = useMemo(() => overrideData || coursesData, [overrideData]);
   const [selected, setSelected] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [enrolledIds, setEnrolledIds] = useState(() => enrollmentService.getAll());
   const [banner, setBanner] = useState(null);
+
   useEffect(() => {
     // Hydrate enrolled state on mount or storage changes
     try {
@@ -149,6 +153,8 @@ export default function Courses({ coursesData }) {
   const onSelect = (course) => {
     setSelected(course);
     setActiveTab('overview');
+    // Navigate to dedicated page for shareable URL
+    navigate(`/courses/${encodeURIComponent(String(course.id))}`);
   };
 
   const onEnroll = (courseId) => {
