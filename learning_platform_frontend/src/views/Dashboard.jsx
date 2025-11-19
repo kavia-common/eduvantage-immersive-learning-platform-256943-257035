@@ -40,9 +40,9 @@ export default function Dashboard() {
     },
     {
       label: "Take Quiz",
-      to: "/analytics",
+      to: "/courses/react-101?tab=quizzes",
       emoji: "🧠",
-      aria: "Take an adaptive practice quiz",
+      aria: "Go directly to React 101 quizzes",
     },
     {
       label: "View Progress",
