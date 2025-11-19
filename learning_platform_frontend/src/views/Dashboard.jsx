@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Card from "../components/common/Card";
 import Button from "../components/common/Button";
@@ -6,12 +6,13 @@ import AssistantPanel from "../components/assistant/AssistantPanel";
 import LearningAssistant from "../components/assistant/LearningAssistant";
 import VirtualClassroom from "../components/VirtualClassroom";
 import WellbeingDashboard from "../components/wellbeing/WellbeingDashboard";
+import { useUserEnrollments } from "../hooks/useUserEnrollments";
 
 /**
  * PUBLIC_INTERFACE
  * Dashboard - authenticated overview with glass welcome header, stats, quick actions,
  * assistant modules, and a Virtual Classroom preview panel.
- *
+ * 
  * Accessibility: Includes aria labels and roles for interactive elements.
  * Responsiveness: Uses CSS grid and responsive cards.
  */
@@ -25,6 +26,59 @@ export default function Dashboard() {
     { label: "Courses", value: "5", sub: "Active enrollments", emoji: "📚" },
   ];
 
+  // --- Begin Take Quiz Quick Action (Dynamic) ---
+  const { enrollments, loading: quizLoading, error: quizError } = useUserEnrollments();
+  const [navigating, setNavigating] = useState(false);
+  const quizButtonRef = useRef(null);
+
+  // Compute the best course for quiz navigation
+  const getBestQuizTarget = useCallback(() => {
+    if (enrollments && enrollments.length > 0) {
+      // Most recent by descending created_at
+      const courseId = enrollments[0].course_id;
+      return `/courses/${courseId}?tab=quizzes`;
+    }
+    return `/courses?intent=quiz`;
+  }, [enrollments]);
+
+  // Button handler for Take Quiz (overrides legacy quickActions['Take Quiz'])
+  const handleQuizClick = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setNavigating(true);
+      try {
+        const target = getBestQuizTarget();
+        navigate(target);
+        setNavigating(false);
+
+        if ((!enrollments || enrollments.length === 0) && typeof window !== "undefined") {
+          setTimeout(() => {
+            if (window?.toast) {
+              window.toast(
+                "Enroll in a course to take quizzes!",
+                { type: "info" }
+              );
+            } else {
+              window.alert("Enroll in a course to access quizzes.");
+            }
+          }, 500);
+        }
+      } catch (e) {
+        setNavigating(false);
+        // Robust error handling - no stack trace
+        if (window?.toast) {
+          window.toast(
+            "Could not determine course for quiz. Try again later.",
+            { type: "error" }
+          );
+        }
+      }
+    },
+    [enrollments, getBestQuizTarget, navigate]
+  );
+  // --- End Take Quiz Quick Action ---
+
+  // Define other quick actions, removing take-quiz from array (use live button below)
   const quickActions = [
     {
       label: "Continue Learning",
@@ -38,12 +92,7 @@ export default function Dashboard() {
       emoji: "📡",
       aria: "Join a live class session",
     },
-    {
-      label: "Take Quiz",
-      to: "/courses/react-101?tab=quizzes",
-      emoji: "🧠",
-      aria: "Go directly to React 101 quizzes",
-    },
+    // Take Quiz handled separately
     {
       label: "View Progress",
       to: "/analytics",
@@ -144,6 +193,7 @@ export default function Dashboard() {
               marginTop: "0.75rem",
             }}
           >
+            {/* Map other quick actions */}
             {quickActions.map((qa) => (
               <Card
                 key={qa.label}
@@ -176,6 +226,97 @@ export default function Dashboard() {
                 </Link>
               </Card>
             ))}
+            {/* --- Custom dynamic Take Quiz button --- */}
+            <Card
+              key="Take Quiz"
+              variant="glass"
+              className="is-interactive"
+              aria-label="Take a quiz for your current course"
+              style={{
+                padding: "0.75rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "0.5rem",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <div aria-hidden="true" style={{ fontSize: "1.1rem" }}>🧠</div>
+                <div style={{ fontWeight: 600 }}>
+                  Take Quiz
+                </div>
+              </div>
+              <Button
+                ref={quizButtonRef}
+                type="button"
+                className="take-quiz-btn is-interactive"
+                aria-label={
+                  quizLoading || navigating
+                    ? "Preparing quiz action"
+                    : "Take a quiz for your current course"
+                }
+                onClick={handleQuizClick}
+                disabled={quizLoading || navigating}
+                variant="primary"
+                size="sm"
+                style={{
+                  minWidth: 80,
+                  position: "relative",
+                  opacity: quizLoading || navigating ? 0.6 : 1,
+                  cursor: quizLoading || navigating ? "not-allowed" : "pointer",
+                }}
+              >
+                {quizLoading || navigating ? (
+                  <span
+                    className="loader"
+                    aria-busy="true"
+                    role="status"
+                    style={{
+                      width: 18,
+                      height: 18,
+                      border: "2px solid #fff",
+                      borderTop: "2px solid #60A5FA",
+                      borderRadius: "50%",
+                      display: "inline-block",
+                      verticalAlign: "middle",
+                      animation: "spin 1s linear infinite"
+                    }}
+                  />
+                ) : (
+                  <span role="text">Open</span>
+                )}
+              </Button>
+
+              <style>
+                {`
+                  @keyframes spin {
+                    to { transform: rotate(360deg); }
+                  }
+                  .take-quiz-btn .loader {
+                    border-style: solid;
+                    border-width: 2px;
+                  }
+                `}
+              </style>
+
+              {/* Error state (optional) */}
+              {quizError && (
+                <span
+                  role="alert"
+                  aria-live="assertive"
+                  style={{
+                    color: "#EF4444",
+                    marginLeft: 8,
+                    fontSize: "0.95rem",
+                    fontWeight: 500
+                  }}
+                >
+                  {typeof quizError === "string"
+                    ? quizError
+                    : "Could not load your enrollments."}
+                </span>
+              )}
+            </Card>
           </div>
         </Card>
       </section>
