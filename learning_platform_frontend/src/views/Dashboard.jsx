@@ -8,14 +8,11 @@ import { useNavigate } from "react-router-dom";
 import Button from "../components/common/Button";
 import Loader from "../components/common/Loader";
 import BootcampResourceModal from "../components/bootcamp/BootcampResourceModal";
+import BootcampResourcesList from "../components/bootcamp/BootcampResourcesList.jsx";
 
-/**
- * Modal to select from multiple courses for the quick action.
- * Keyboard and a11y supported.
- */
 function QuickActionCourseModal({ courses, isOpen, onClose, onSelect }) {
   const [focusedIdx, setFocusedIdx] = useState(0);
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isOpen) return;
     function down(e) {
       if (e.key === "ArrowDown") {
@@ -130,12 +127,11 @@ function Dashboard() {
     error: coursesError,
   } = useInstructorCourses(role === "instructor" ? userId : null);
 
-  // Student enrollments for quick 'Take Quiz'
+  // Student enrollments for quizzes
   const {
     enrollments = [],
     loading: enrollmentsLoading,
     error: enrollmentsError,
-    // Optionally: add refresh if wanted
   } = useUserEnrollments(role === "student" ? userId : null);
 
   // Modal state for instructor multi-course selection
@@ -188,6 +184,9 @@ function Dashboard() {
   // For Bootcamp modal: derive currentUser
   const currentUser = auth?.user || null;
 
+  // Support refreshing Resources list after add
+  const [resourcesListRefresh, setResourcesListRefresh] = useState(0);
+
   return (
     <div className="dashboard-container">
       <div style={{
@@ -219,8 +218,18 @@ function Dashboard() {
             onClose={() => setShowBootcampModal(false)}
             currentUser={currentUser}
             userRole={role}
+            afterResourceAdded={() => {
+              // Triggers downstream resources list to refresh
+              setResourcesListRefresh(v => v + 1);
+              window.localStorage.setItem("bootcamp_resource_added", "1");
+            }}
           />}
       </div>
+
+      <BootcampResourcesList
+        key={resourcesListRefresh}
+        afterResourceChange={() => setResourcesListRefresh(v => v + 1)}
+      />
 
       <h1>Dashboard</h1>
 

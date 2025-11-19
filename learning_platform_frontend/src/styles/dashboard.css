@@ -22,6 +22,106 @@
   max-width: 96vw;
 }
 
+/* Bootcamp Resources Ocean Professional extra styling overrides */
+.bootcamp-resources-container {
+  margin-top: 2rem;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 2px 24px #2563EB10, 0 1.5px 2px #F59E0B20;
+  padding: 0 0 1rem 0;
+  max-width: 460px;
+  width: 100%;
+  min-width: 320px;
+}
+
+.bootcamp-resources-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 1.6rem 0.2rem 1.6rem;
+}
+
+.oceanpro-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: #2563EB;
+  margin-bottom: 0;
+}
+
+.bootcamp-resources-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0.5rem 0.5rem 0;
+}
+.oceanpro-resourceitm {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #f9fafb;
+  border-bottom: 1px solid #f1f5f9;
+  border-left: 4px solid #F59E0B10;
+  padding: 0.8rem 1.4rem 0.8rem 1.4rem;
+  border-radius: 0.7rem;
+  transition: box-shadow 0.18s;
+  margin-bottom: 0.6rem;
+}
+.oceanpro-resourceitm:focus {
+  outline: 2px solid #2563EB44;
+  box-shadow: 0 0 0 3px #2563EB22;
+}
+.bootcamp-resources-typeicon {
+  flex-shrink: 0;
+  margin-right: 2px;
+  margin-left: -6px;
+}
+.bootcamp-resources-title {
+  flex: 2 1 220px;
+  font-size: 1rem;
+  color: #174883;
+  max-width: 16em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bootcamp-resources-meta {
+  flex: 1 1 120px;
+  display: flex;
+  gap: 0.8em;
+  color: #64748b;
+  font-size: 0.95em;
+}
+.bootcamp-resources-actions {
+  display: inline-flex;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+.oceanpro-actionbtn {
+  color: #2563EB;
+  background: transparent;
+  border: none;
+  min-width: 32px;
+  min-height: 32px;
+}
+.oceanpro-actionbtn.delete {
+  color: #EF4444 !important;
+}
+
+.bootcamp-resources-state {
+  text-align: center;
+  padding: 2.2rem 2rem;
+  color: #64748b;
+}
+.bootcamp-resources-state .oceanpro-empty-icon {
+  margin-bottom: 0.7rem;
+}
+.bootcamp-resources-state.error {
+  color: #EF4444;
+}
+.bootcamp-resources-state.empty {
+  color: #64748b;
+}
+
 @media (max-width: 600px) {
   .dashboard-container {
     padding: 1.2rem 0.3rem;
