@@ -7,6 +7,7 @@ import { useUserEnrollments } from "../hooks/useUserEnrollments";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/common/Button";
 import Loader from "../components/common/Loader";
+import BootcampResourceModal from "../components/bootcamp/BootcampResourceModal";
 
 /**
  * Modal to select from multiple courses for the quick action.
@@ -140,16 +141,15 @@ function Dashboard() {
   // Modal state for instructor multi-course selection
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Most recently updated course for instructor
-  const defaultCourse = useMemo(
-    () => (courses && courses.length > 0 ? courses[0] : null),
-    [courses]
-  );
+  // Ocean Professional theme palette
+  const colorPrimary = "#2563EB";
+  const colorAccent = "#F59E0B";
 
-  // Most recent enrollment for student quick action
-  const mostRecentEnrollment = useMemo(
-    () => enrollments && enrollments.length > 0 ? enrollments[0] : null,
-    [enrollments]
+  const defaultCourse = useMemo(() =>
+    (courses && courses.length > 0 ? courses[0] : null), [courses]
+  );
+  const mostRecentEnrollment = useMemo(() =>
+    (enrollments && enrollments.length > 0 ? enrollments[0] : null), [enrollments]
   );
 
   // Instructor: Quick create quiz
@@ -161,39 +161,67 @@ function Dashboard() {
       setModalOpen(true);
     }
   };
-
   const handleSelectCourse = (course) => {
     setModalOpen(false);
-    if (course && course.id) {
-      navigate(`/instructor/courses/${course.id}/quizzes/new`);
-    }
+    if (course && course.id) navigate(`/instructor/courses/${course.id}/quizzes/new`);
   };
-
   const handleCreateCourse = () => {
     navigate("/instructor/courses/new");
   };
-
   // Student: Take quiz for most recent enrollment
   const handleTakeQuiz = () => {
     if (!enrollments || enrollments.length === 0) return;
-    // Assuming enrollment has courseId and quizId, adjust as required by actual data.
     const enrollment = enrollments[0];
     if (enrollment && enrollment.course_id) {
       navigate(`/courses/${enrollment.course_id}/quiz`);
     }
   };
 
-  // Ocean Professional theme palette
-  const colorPrimary = "#2563EB";
-  const colorAccent = "#F59E0B";
+  // Bootcamp modal state
+  const [showBootcampModal, setShowBootcampModal] = useState(false);
 
   // Only visible for instructors
   const showInstructorQuickAction = role === "instructor" && !roleLoading;
   // Only visible for students
   const showStudentQuickAction = role === "student" && !roleLoading;
 
+  // For Bootcamp modal: derive currentUser
+  const currentUser = auth?.user || null;
+
   return (
     <div className="dashboard-container">
+      <div style={{
+        display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: 22
+      }}>
+        <button
+          type="button"
+          aria-label="Open Bootcamp Resource Modal"
+          onClick={() => setShowBootcampModal(true)}
+          style={{
+            background: "linear-gradient(to right, #2563EB 80%, #F59E0B 100%)",
+            color: "#fff",
+            fontWeight: "bold",
+            fontSize: "1.05em",
+            border: "none",
+            borderRadius: 8,
+            padding: "10px 24px",
+            marginRight: 0,
+            boxShadow: "0 2px 8px #2563eb20",
+            cursor: "pointer",
+            transition: "box-shadow 0.15s"
+          }}
+        >
+          <span role="img" aria-label="bootcamp">🎓</span> KAVIA AI BOOTCAMP
+        </button>
+        {showBootcampModal &&
+          <BootcampResourceModal
+            open={showBootcampModal}
+            onClose={() => setShowBootcampModal(false)}
+            currentUser={currentUser}
+            userRole={role}
+          />}
+      </div>
+
       <h1>Dashboard</h1>
 
       {showInstructorQuickAction && (

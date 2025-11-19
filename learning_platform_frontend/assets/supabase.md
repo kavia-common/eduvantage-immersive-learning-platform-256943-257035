@@ -39,4 +39,16 @@ Relations:
 **Reference environment variables:**  
 Connect via `REACT_APP_SUPABASE_URL` and `REACT_APP_SUPABASE_KEY` (see `.env`).
 
-... (rest of existing documentation unchanged) ...
+---
+
+### Bootcamp Resources
+
+- Bucket: `bootcamp-resources`
+  - Store all Bootcamp file uploads, path format: `{owner_id}/{timestamp}-{filename}`.
+- Table: `bootcamp_resources`
+  - Columns: id (uuid), owner_id (uuid or text), title (text), type ('file'|'link'), url (text), storage_path (text), original_name (text), mime_type (text), size_bytes (int), created_at (timestamp).
+- Allow both students and instructors to add. Mark owner_id for each file upload or link.
+- Grant R/W access for users (students/instructors) on both bucket and table.
+- Non-Supabase fallback: store metadata in localStorage, do not persist actual files.
+- All interaction should be through the `useBootcampResources` React hook in the frontend.
+
