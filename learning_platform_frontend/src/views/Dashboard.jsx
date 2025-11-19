@@ -1,8 +1,9 @@
-import React, { useContext, useMemo, useState } from "react";
+import React, { useContext, useMemo, useState, useEffect } from "react";
 import "../styles/dashboard.css";
 import { AuthContext } from "../auth/AuthProvider";
 import useProfileRole from "../auth/useProfileRole";
 import { useInstructorCourses } from "../hooks/useInstructorCourses";
+import { useUserEnrollments } from "../hooks/useUserEnrollments";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/common/Button";
 import Loader from "../components/common/Loader";
@@ -117,22 +118,41 @@ function QuickActionCourseModal({ courses, isOpen, onClose, onSelect }) {
 
 function Dashboard() {
   const auth = useContext(AuthContext);
-  const role = useProfileRole();
+  const { role, loading: roleLoading } = useProfileRole();
   const navigate = useNavigate();
   const userId = auth?.user?.id ?? null;
 
-  const { courses, loading, error } = useInstructorCourses(role === "instructor" ? userId : null);
+  // Instructor courses
+  const {
+    courses,
+    loading: coursesLoading,
+    error: coursesError,
+  } = useInstructorCourses(role === "instructor" ? userId : null);
 
-  // Modal state for multi-course selection
+  // Student enrollments for quick 'Take Quiz'
+  const {
+    enrollments = [],
+    loading: enrollmentsLoading,
+    error: enrollmentsError,
+    // Optionally: add refresh if wanted
+  } = useUserEnrollments(role === "student" ? userId : null);
+
+  // Modal state for instructor multi-course selection
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Most recently updated course (default)
+  // Most recently updated course for instructor
   const defaultCourse = useMemo(
     () => (courses && courses.length > 0 ? courses[0] : null),
     [courses]
   );
 
-  // Quick Action Handlers
+  // Most recent enrollment for student quick action
+  const mostRecentEnrollment = useMemo(
+    () => enrollments && enrollments.length > 0 ? enrollments[0] : null,
+    [enrollments]
+  );
+
+  // Instructor: Quick create quiz
   const handleQuickAction = () => {
     if (!courses || courses.length === 0) return;
     if (courses.length === 1) {
@@ -153,12 +173,24 @@ function Dashboard() {
     navigate("/instructor/courses/new");
   };
 
+  // Student: Take quiz for most recent enrollment
+  const handleTakeQuiz = () => {
+    if (!enrollments || enrollments.length === 0) return;
+    // Assuming enrollment has courseId and quizId, adjust as required by actual data.
+    const enrollment = enrollments[0];
+    if (enrollment && enrollment.course_id) {
+      navigate(`/courses/${enrollment.course_id}/quiz`);
+    }
+  };
+
   // Ocean Professional theme palette
   const colorPrimary = "#2563EB";
   const colorAccent = "#F59E0B";
 
   // Only visible for instructors
-  const showInstructorQuickAction = role === "instructor";
+  const showInstructorQuickAction = role === "instructor" && !roleLoading;
+  // Only visible for students
+  const showStudentQuickAction = role === "student" && !roleLoading;
 
   return (
     <div className="dashboard-container">
@@ -186,7 +218,7 @@ function Dashboard() {
             style={{
               color: colorPrimary,
               fontWeight: 600,
-              fontSize: "1.18rem"
+              fontSize: "1.18rem",
             }}
           >
             Create a Quiz for Your Course
@@ -194,13 +226,13 @@ function Dashboard() {
           <span style={{ color: "#374151", fontSize: 15, margin: "8px 0 15px 0" }}>
             Build engaging quizzes to boost student learning.
           </span>
-          {loading && (
+          {coursesLoading && (
             <div style={{ margin: "12px 0" }}>
               <Loader size="sm" />
               <span style={{ marginLeft: 9, color: "#666" }}>Loading your courses...</span>
             </div>
           )}
-          {error && (
+          {coursesError && (
             <div style={{
               background: "#FEF2F2",
               color: "#B91C1C",
@@ -209,10 +241,10 @@ function Dashboard() {
               fontSize: 14,
               marginBottom: 8
             }}>
-              Error: {error}
+              Error: {coursesError}
             </div>
           )}
-          {!loading && !error && (
+          {!coursesLoading && !coursesError && (
             <>
               {courses.length > 0 ? (
                 <>
@@ -283,6 +315,80 @@ function Dashboard() {
           )}
         </div>
       )}
+
+      {showStudentQuickAction && (
+        <div
+          className="dashboard-quickaction"
+          style={{
+            marginTop: 24,
+            marginBottom: 24,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            background: "linear-gradient(90deg,#2563EB0F,#F9FAFB 80%)",
+            padding: "1.5rem 2rem",
+            borderRadius: 16,
+            boxShadow: "0 2px 10px rgba(37,99,235,0.06)",
+            position: "relative",
+            maxWidth: 520,
+          }}
+          aria-label="Student quick action: Take quiz"
+        >
+          <span style={{ color: colorPrimary, fontWeight: 600, fontSize: "1.18rem" }}>
+            Take a Quiz
+          </span>
+          <span style={{ color: "#374151", fontSize: 15, margin: "8px 0 15px 0" }}>
+            Ready to test your knowledge? Jump right in!
+          </span>
+          {enrollmentsLoading && (
+            <div style={{ margin: "12px 0" }}>
+              <Loader size="sm" />
+              <span style={{ marginLeft: 9, color: "#666" }}>Loading enrollments...</span>
+            </div>
+          )}
+          {enrollmentsError && (
+            <div style={{
+              background: "#FEF2F2",
+              color: "#B91C1C",
+              padding: "8px 14px",
+              borderRadius: 6,
+              fontSize: 14,
+              marginBottom: 8
+            }}>
+              Error: {enrollmentsError}
+            </div>
+          )}
+          {!enrollmentsLoading && !enrollmentsError && (
+            <>
+              {enrollments && enrollments.length > 0 ? (
+                <Button
+                  aria-label="Take quiz for most recent course"
+                  style={{
+                    background: colorAccent,
+                    color: "#fff",
+                    borderRadius: 8,
+                    fontWeight: 600,
+                    fontSize: 16,
+                    padding: "0.85rem 2.2rem",
+                  }}
+                  onClick={handleTakeQuiz}
+                  tabIndex={0}
+                >
+                  {mostRecentEnrollment?.course_title
+                    ? `Take Quiz for "${mostRecentEnrollment.course_title}"`
+                    : "Take Quiz"
+                  }
+                </Button>
+              ) : (
+                <span style={{ color: "#EF4444", fontWeight: 500 }}>
+                  You’re not enrolled in any courses yet. Browse courses to get started!
+                </span>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
       {/* Dashboard main content goes here */}
     </div>
   );

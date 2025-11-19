@@ -1,70 +1,45 @@
-import { useEffect, useState, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import { supabase } from '../supabaseClient';
+import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
 
 /**
  * PUBLIC_INTERFACE
- * useUserEnrollments React hook to fetch a user's course enrollments (purchases).
- *
- * - If Supabase is available, fetches from 'purchases' or 'enrollments' table.
- * - Returns enrollments array (ordered by most recent), loading state, and error.
- *
- * Usage:
- *   const { enrollments, loading, error, reload } = useUserEnrollments();
+ * useUserEnrollments
+ * Returns { enrollments, loading, error } for current user.
+ * Only fetches if user ID passed in.
  */
-export function useUserEnrollments() {
+export function useUserEnrollments(userId) {
   const [enrollments, setEnrollments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchEnrollments = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Try Supabase
-      let user = supabase.auth?.user?.() || supabase.auth?.getUser?.()?.user || null;
-      if (!user) {
-        // legacy fallback: check window or context if needed
-        setEnrollments([]);
-        setLoading(false);
-        return;
-      }
-      // Try the best-known table structures
-      let { data, error: queryError } = await supabase
-        .from('purchases')
-        .select('id,course_id,created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      if (queryError || !Array.isArray(data)) {
-        // Try alternative table (enrollments)
-        const { data: alt, error: altError } = await supabase
-          .from('enrollments')
-          .select('id,course_id,created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-        if (altError || !Array.isArray(alt)) {
-          setError((queryError || altError || "No enrollments found"));
-          setEnrollments([]);
-          setLoading(false);
-          return;
-        }
-        setEnrollments(alt);
-        setLoading(false);
-      } else {
-        setEnrollments(data);
-        setLoading(false);
-      }
-    } catch (e) {
-      // If all else fails, set error
-      setError("Could not load enrollments.");
-      setEnrollments([]);
-      setLoading(false);
-    }
-  }, []);
+  // These env vars must be set in .env and loaded
+  const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
+  const supabaseKey = process.env.REACT_APP_SUPABASE_KEY;
 
   useEffect(() => {
-    fetchEnrollments();
-  }, [fetchEnrollments]);
+    if (!userId) return;
+    setLoading(true);
 
-  return { enrollments, loading, error, reload: fetchEnrollments };
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    supabase
+      .from("enrollments")
+      .select("*, course:title, course:course_title")
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (error) {
+          setError(error.message || "Failed to load enrollments");
+        } else {
+          setEnrollments(data || []);
+        }
+        setLoading(false);
+      })
+      .catch((e) => {
+        setError(e.message || "Failed to load enrollments");
+        setLoading(false);
+      });
+  }, [userId, supabaseUrl, supabaseKey]);
+
+  return { enrollments, loading, error };
 }
