@@ -11,8 +11,9 @@ import { useAuth } from "../auth/AuthProvider";
 
 // PUBLIC_INTERFACE
 export default function Signup() {
-  const { signUpWithPassword, error, signInWithOAuth } = useAuth();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const { signUpWithPassword, error, signInWithOAuth, user } = useAuth();
+  const [form, setForm] = useState({ email: "", password: "", role: "student" });
+  const [postSignupNotice, setPostSignupNotice] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [localError, setLocalError] = useState("");
@@ -25,6 +26,7 @@ export default function Signup() {
     try {
       await signUpWithPassword(form.email.trim(), form.password);
       setMessage("If email confirmation is required, please check your inbox to verify your account.");
+      setPostSignupNotice(true);
     } catch (e2) {
       setLocalError(String(e2?.message || e2));
     } finally {
@@ -58,6 +60,11 @@ export default function Signup() {
             {message}
           </div>
         )}
+        {postSignupNotice && (
+          <div className="mt-2" style={{ color: "var(--color-muted)" }}>
+            After confirming your email and logging in, your selected role ({form.role}) can be applied via Profile or the Instructor Dashboard.
+          </div>
+        )}
 
         <form className="mt-3" onSubmit={onSubmit}>
           <div className="mt-2">
@@ -82,6 +89,18 @@ export default function Signup() {
               onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
               style={{ width: "100%", padding: "0.6rem", borderRadius: 12, border: "1px solid var(--color-border)" }}
             />
+          </div>
+          <div className="mt-2">
+            <label htmlFor="role">Sign up as</label>
+            <select
+              id="role"
+              value={form.role}
+              onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+              style={{ width: "100%", padding: "0.6rem", borderRadius: 12, border: "1px solid var(--color-border)" }}
+            >
+              <option value="student">Student</option>
+              <option value="instructor">Instructor</option>
+            </select>
           </div>
 
           <div className="mt-3" style={{ display: "flex", gap: ".5rem" }}>

@@ -7,6 +7,8 @@ import { CourseAssignments } from '../components/courses/CourseAssignments';
 import { CourseQuizzes } from '../components/courses/CourseQuizzes';
 import { CourseResources } from '../components/courses/CourseResources';
 import Button from '../components/common/Button';
+import { useAuth } from '../auth/AuthProvider';
+import { addToCart, addToWishlist } from '../services/supabaseDataService';
 
 /**
  * PUBLIC_INTERFACE
@@ -21,6 +23,8 @@ import Button from '../components/common/Button';
 function CourseDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { user } = useAuth();
+  const [msg, setMsg] = React.useState("");
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Supported tabs mapping
@@ -80,12 +84,38 @@ function CourseDetailPage() {
     );
   }
 
+  async function onAddToCart() {
+    if (!user) { setMsg("Please login to add to cart."); return; }
+    try {
+      await addToCart(user.id, course.id, 1);
+      setMsg("Added to cart");
+      setTimeout(() => setMsg(""), 1500);
+    } catch (e) {
+      setMsg(String(e?.message || e));
+    }
+  }
+  async function onAddToWishlist() {
+    if (!user) { setMsg("Please login to add to wishlist."); return; }
+    try {
+      await addToWishlist(user.id, course.id);
+      setMsg("Added to wishlist");
+      setTimeout(() => setMsg(""), 1500);
+    } catch (e) {
+      setMsg(String(e?.message || e));
+    }
+  }
+
   return (
     <div style={{ padding: '1rem' }}>
-      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
         <Button onClick={() => navigate('/courses')} variant="secondary">Back to Courses</Button>
         <h1 style={{ margin: 0, fontSize: '1.5rem' }}>{course.title}</h1>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+          <Button variant="primary" onClick={onAddToCart}>Add to Cart</Button>
+          <Button variant="secondary" onClick={onAddToWishlist}>Add to Wishlist</Button>
+        </div>
       </div>
+      {Boolean(msg) && <div style={{ color: '#2563EB', marginBottom: '.5rem' }}>{msg}</div>}
 
       {/* Tabs */}
       <div role="tablist" aria-label="Course Tabs" style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid #e5e7eb', marginBottom: '1rem' }}>

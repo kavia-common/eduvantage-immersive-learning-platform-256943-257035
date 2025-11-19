@@ -24,6 +24,9 @@ const StylePreview = lazy(() => import("../views/StylePreview"));
 const FeedDemo = lazy(() => import("../views/FeedDemo"));
 const Courses = lazy(() => import("../views/Courses"));
 const CourseDetailPage = lazy(() => import("../views/CourseDetailPage")); // new route
+const InstructorDashboard = lazy(() => import("../views/InstructorDashboard"));
+const Cart = lazy(() => import("../views/Cart"));
+const Wishlist = lazy(() => import("../views/Wishlist"));
 
 /**
  * PUBLIC_INTERFACE
@@ -121,6 +124,36 @@ export const routes = [
     ),
     label: "Profile",
     icon: "👤",
+  },
+  {
+    path: "/instructor",
+    element: (
+      <ProtectedRoute>
+        <InstructorDashboard />
+      </ProtectedRoute>
+    ),
+    label: "Instructor",
+    icon: "🧑‍🏫",
+  },
+  {
+    path: "/wishlist",
+    element: (
+      <ProtectedRoute>
+        <Wishlist />
+      </ProtectedRoute>
+    ),
+    label: "Wishlist",
+    icon: "💖",
+  },
+  {
+    path: "/cart",
+    element: (
+      <ProtectedRoute>
+        <Cart />
+      </ProtectedRoute>
+    ),
+    label: "Cart",
+    icon: "🛒",
   },
   {
     path: "/settings",

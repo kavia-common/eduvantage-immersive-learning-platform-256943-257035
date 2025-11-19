@@ -3,6 +3,7 @@ import "./topnav.css";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
 import Button from "../common/Button";
+import useWishCartCounts from "../../hooks/useWishCartCounts";
 
 /**
  * Top navigation with page title, theme toggle, and sign-out when logged in.
@@ -12,6 +13,7 @@ import Button from "../common/Button";
 export default function TopNav({ title = "Home", onMenu }) {
   const [theme, setTheme] = useState(document.documentElement.getAttribute("data-theme") || "light");
   const { user, signOut } = useAuth();
+  const { cartCount, wishlistCount } = useWishCartCounts();
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -37,6 +39,16 @@ export default function TopNav({ title = "Home", onMenu }) {
         <Link to="/courses" className="nav-link" aria-label="Courses" style={{ marginRight: ".5rem" }}>
           Courses
         </Link>
+        {user && (
+          <>
+            <Link to="/wishlist" className="nav-link" aria-label="Wishlist" style={{ marginRight: ".5rem" }}>
+              ❤️ Wishlist {wishlistCount ? `(${wishlistCount})` : ""}
+            </Link>
+            <Link to="/cart" className="nav-link" aria-label="Cart" style={{ marginRight: ".5rem" }}>
+              🛒 Cart {cartCount ? `(${cartCount})` : ""}
+            </Link>
+          </>
+        )}
         <Button variant="purple" onClick={toggleTheme} aria-label="Toggle theme">
           {theme === "light" ? "🌙 Dark" : "☀️ Light"}
         </Button>
