@@ -28,6 +28,11 @@ const InstructorDashboard = lazy(() => import("../views/InstructorDashboard"));
 const Cart = lazy(() => import("../views/Cart"));
 const Wishlist = lazy(() => import("../views/Wishlist"));
 
+// ADD: dynamic imports for quiz management
+const InstructorCourseQuizzes = lazy(() => import("../pages/InstructorCourseQuizzes"));
+const InstructorQuizCreate = lazy(() => import("../pages/InstructorQuizCreate"));
+const InstructorQuizEdit = lazy(() => import("../pages/InstructorQuizEdit"));
+
 /**
  * PUBLIC_INTERFACE
  * Exported list of route definitions consumed by <App />.
@@ -195,10 +200,44 @@ export const routes = [
   { path: "/signup", element: <Signup />, label: "Signup" },
   { path: "/auth/callback", element: <OAuthCallback />, label: "OAuth Callback" },
 
+  // ---- INSTRUCTOR QUIZ MANAGEMENT DYNAMIC ROUTES ----
+  {
+    path: "/instructor/courses/:courseId/quizzes",
+    element: (
+      <ProtectedRoute>
+        <InstructorCourseQuizzes />
+      </ProtectedRoute>
+    ),
+    label: "Quizzes",
+    icon: "",
+  },
+  {
+    path: "/instructor/courses/:courseId/quizzes/new",
+    element: (
+      <ProtectedRoute>
+        <InstructorQuizCreate />
+      </ProtectedRoute>
+    ),
+    label: "Create Quiz",
+    icon: "",
+  },
+  {
+    path: "/instructor/courses/:courseId/quizzes/:quizId/edit",
+    element: (
+      <ProtectedRoute>
+        <InstructorQuizEdit />
+      </ProtectedRoute>
+    ),
+    label: "Edit Quiz",
+    icon: "",
+  },
+  // ---- END: QUIZ MANAGEMENT ROUTES ----
+
   // Aliases and 404
   { path: "/home", element: <Navigate to="/" replace /> },
   { path: "*", element: <NotFound />, label: "Not Found" },
 ];
+
 
 /**
  * PUBLIC_INTERFACE
