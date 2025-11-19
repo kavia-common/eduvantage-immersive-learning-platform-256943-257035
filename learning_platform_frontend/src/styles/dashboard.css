@@ -1,0 +1,33 @@
+.dashboard-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #f9fafb;
+  padding: 2.5rem 1.5rem;
+  border-radius: 1.5rem;
+  min-height: 60vh;
+}
+
+.dashboard-quickaction {
+  font-family: inherit;
+}
+
+.quickaction-modal {
+  /* Provided in JS, add cursor and fallback */
+  cursor: pointer;
+}
+
+.quickaction-modal-content {
+  /* Provided in JS, but ensure mobile fallback */
+  max-width: 96vw;
+}
+
+@media (max-width: 600px) {
+  .dashboard-container {
+    padding: 1.2rem 0.3rem;
+  }
+  .quickaction-modal-content {
+    padding: 1rem;
+    min-width: 220px;
+  }
+}
