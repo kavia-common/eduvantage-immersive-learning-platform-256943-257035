@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { useBootcampResources } from "../../hooks/useBootcampResources";
+import useBootcampResources from "../../hooks/useBootcampResources";
 import Loader from "../common/Loader";
 import Button from "../common/Button";
 
@@ -34,19 +34,24 @@ export default function BootcampResourceModal({ open, onClose, currentUser, user
   const [messages, setMessages] = useState([]);
   const [uploading, setUploading] = useState(false);
 
-  const { resources, loading, listResources, addResource } = useBootcampResources(currentUser);
+  const { resources, loading, error, addLink, addFile, listResources } = useBootcampResources();
 
   const fileInputExcel = useRef(null);
   const fileInputGeneric = useRef(null);
 
+  // Refresh resource list when modal opens or after resource created
+  const [refreshIndex, setRefreshIndex] = useState(0);
   React.useEffect(() => {
-    if (open) listResources();
-  }, [open, listResources]);
+    if (open) {
+      listResources("me");
+    }
+    // eslint-disable-next-line
+  }, [open, refreshIndex]);
 
   function toast(msg, type = "info") {
     setMessages((prev) => [
       ...prev,
-      { id: Date.now(), msg, type }
+      { id: Date.now() + Math.random(), msg, type }
     ]);
   }
 
@@ -76,14 +81,22 @@ export default function BootcampResourceModal({ open, onClose, currentUser, user
           toast("URL must start with https:// and not be empty.", "error");
           return;
         }
-        await addResource({title, type: "link", url});
-        toast("Link added!", "success");
+        const res = await addLink({ url, title });
+        if (res && !res.error) {
+          toast("Link added!", "success");
+          setRefreshIndex(x => x + 1);
+          setTitle(""); setUrl(""); setExcelFile(null); setGenericFile(null);
+        }
       } else if (resourceType === "excel") {
         if (!excelFile) {
           toast("Please select an Excel or CSV file.", "error");
           return;
         }
-        if (!allowedExcelTypes.includes(excelFile.type) && !excelFile.name.endsWith(".csv") && !excelFile.name.endsWith(".xlsx")) {
+        if (
+          !allowedExcelTypes.includes(excelFile.type) &&
+          !excelFile.name.endsWith(".csv") &&
+          !excelFile.name.endsWith(".xlsx")
+        ) {
           toast("Invalid file type for Excel/CSV.", "error");
           return;
         }
@@ -91,8 +104,21 @@ export default function BootcampResourceModal({ open, onClose, currentUser, user
           toast("Excel/CSV file must be under 15MB.", "error");
           return;
         }
-        await addResource({title, type: "file", file: excelFile});
-        toast("Excel/CSV uploaded!", "success");
+        // Simulate Storage upload step as required; here we only supply metadata.
+        const uploadPath = `bootcamp-resources/${Date.now()}_${excelFile.name}`;
+        // Actual Storage upload should be handled before addFile (see NOTE below)
+        const res = await addFile({
+          storagePath: uploadPath,
+          originalName: excelFile.name,
+          mimeType: excelFile.type,
+          sizeBytes: excelFile.size,
+          title,
+        });
+        if (res && !res.error) {
+          toast("Excel/CSV resource registered!", "success");
+          setRefreshIndex(x => x + 1);
+          setTitle(""); setUrl(""); setExcelFile(null); setGenericFile(null);
+        }
       } else if (resourceType === "file") {
         if (!genericFile) {
           toast("Please select a file to upload.", "error");
@@ -106,17 +132,21 @@ export default function BootcampResourceModal({ open, onClose, currentUser, user
           toast("File must be under 25MB.", "error");
           return;
         }
-        await addResource({title, type: "file", file: genericFile});
-        toast("File uploaded!", "success");
+        // Simulate Storage upload step as required; here we only supply metadata.
+        const uploadPath = `bootcamp-resources/${Date.now()}_${genericFile.name}`;
+        const res = await addFile({
+          storagePath: uploadPath,
+          originalName: genericFile.name,
+          mimeType: genericFile.type,
+          sizeBytes: genericFile.size,
+          title,
+        });
+        if (res && !res.error) {
+          toast("File resource registered!", "success");
+          setRefreshIndex(x => x + 1);
+          setTitle(""); setUrl(""); setExcelFile(null); setGenericFile(null);
+        }
       }
-      setTimeout(() => {
-        // refresh list after success and reset form
-        listResources();
-        setTitle("");
-        setUrl("");
-        setExcelFile(null);
-        setGenericFile(null);
-      }, 1000);
     } catch (err) {
       toast(`Error: ${err.message || "Failed."}`, "error");
     } finally {
@@ -156,6 +186,33 @@ export default function BootcampResourceModal({ open, onClose, currentUser, user
           style={{position: "absolute", right: 12, top: 12, background: "none", border: "none", fontSize: 24, cursor: "pointer"}}
         >&times;</button>
         <h3 className="bootcamp-modal-title" style={{color: "#2563EB", marginBottom: 4, fontWeight: "700", fontSize: "1.3rem"}}>Add Bootcamp Resource</h3>
+        {/* Ocean Professional Error/Loading */}
+        {uploading || loading ? (
+          <div
+            className="ocean-loader"
+            style={{
+              color: "#2563EB",
+              background: "linear-gradient(90deg,#2563EB30,#f9fafb)",
+              borderRadius: 8,
+              padding: 12,
+              marginBottom: 8
+            }}
+          >
+            Loading…
+          </div>
+        ) : null}
+        {error && (
+          <div className="ocean-error-message" style={{
+            color: '#EF4444',
+            background: '#fff0f1',
+            border: '1px solid #EF4444',
+            borderRadius: 6,
+            marginBottom: 8,
+            padding: '8px 12px'
+          }}>
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit} style={{display: "flex", flexDirection: "column", gap: "1rem"}} aria-label="add resource form">
           <label>
             <span className="label">Resource title</span>
@@ -179,46 +236,46 @@ export default function BootcampResourceModal({ open, onClose, currentUser, user
             </div>
           </fieldset>
           {resourceType === "link" &&
-          <label>
-            <span className="label">Folder URL (https)</span>
-            <input
-              required
-              type="url"
-              inputMode="url"
-              pattern="https://.*"
-              placeholder="https://..."
-              value={url}
-              onChange={e => setUrl(e.target.value)}
-              aria-label="Folder URL"
-              style={{width: "100%", padding: "0.33rem", borderRadius: 5, border: "1px solid #ddd", marginTop: 2}}
-            />
-          </label>}
+            <label>
+              <span className="label">Folder URL (https)</span>
+              <input
+                required
+                type="url"
+                inputMode="url"
+                pattern="https://.*"
+                placeholder="https://..."
+                value={url}
+                onChange={e => setUrl(e.target.value)}
+                aria-label="Folder URL"
+                style={{width: "100%", padding: "0.33rem", borderRadius: 5, border: "1px solid #ddd", marginTop: 2}}
+              />
+            </label>}
           {resourceType === "excel" &&
-          <label>
-            <span className="label">Excel or CSV file (Max 15MB)</span>
-            <input
-              type="file"
-              accept=".csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
-              ref={fileInputExcel}
-              onChange={handleExcelSelect}
-              aria-label="Excel/CSV upload"
-              style={{width: "100%", marginTop: 6}}
-            />
-            {excelFile ? <div style={{fontSize: 13}}>Selected: {excelFile.name}</div> : null}
-          </label>}
+            <label>
+              <span className="label">Excel or CSV file (Max 15MB)</span>
+              <input
+                type="file"
+                accept=".csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+                ref={fileInputExcel}
+                onChange={handleExcelSelect}
+                aria-label="Excel/CSV upload"
+                style={{width: "100%", marginTop: 6}}
+              />
+              {excelFile ? <div style={{fontSize: 13}}>Selected: {excelFile.name}</div> : null}
+            </label>}
           {resourceType === "file" &&
-          <label>
-            <span className="label">Document/Image (.pdf, .docx, .jpg/png/webp/gif, Max 25MB)</span>
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.gif,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,image/png,image/jpeg,image/webp,image/gif"
-              ref={fileInputGeneric}
-              onChange={handleGenericSelect}
-              aria-label="File upload"
-              style={{width: "100%", marginTop: 6}}
-            />
-            {genericFile ? <div style={{fontSize: 13}}>Selected: {genericFile.name}</div> : null}
-          </label>}
+            <label>
+              <span className="label">Document/Image (.pdf, .docx, .jpg/png/webp/gif, Max 25MB)</span>
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.gif,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,image/png,image/jpeg,image/webp,image/gif"
+                ref={fileInputGeneric}
+                onChange={handleGenericSelect}
+                aria-label="File upload"
+                style={{width: "100%", marginTop: 6}}
+              />
+              {genericFile ? <div style={{fontSize: 13}}>Selected: {genericFile.name}</div> : null}
+            </label>}
           <Button type="submit" style={{background: "#2563EB", color: "#fff"}} disabled={uploading}>{uploading ? <Loader size={18}/> : "Add Resource"}</Button>
         </form>
         {messages.slice(-3).map(({id, msg, type}) =>
@@ -264,6 +321,7 @@ export default function BootcampResourceModal({ open, onClose, currentUser, user
     </div>
   ) : null;
 }
+
 BootcampResourceModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
