@@ -1,54 +1,153 @@
-## Instructor Quiz UI
+# Supabase Schema & RLS for Bootcamp Resources Management
 
-- **Navigation**: `/instructor/courses/:courseId/quizzes` lists/edit quizzes for a course. "Create Quiz" launches quiz builder.
-- **Features**: Create/edit quiz title, description, publish toggle, time limit, and questions (type, options, correct answers, points, order).
-- **Permissions**: Only users with "instructor" role via `useProfileRole` may access these pages. Others receive an access-denied message.
-- **Persistence**: Data is saved to Supabase tables `quizzes` and `quiz_questions` with RLS enabled. Only quizzes for the current instructor's course are accessible.
-- **Validation**: Forms use robust validation with real-time error display, unsaved-changes warning, accessible fields, and styles matching the Ocean Professional theme.
-- **Extensibility**: To reuse, import `<QuizForm />` and pass in `onSave`, `onCancel` handlers. Extensible for new fields and richer question types.
-- **Dependencies**: Uses React, React Router, Chakra UI, Zod for validation, and Supabase via environment variables.
+## Table: `bootcamp_resources`
 
-# Supabase Quizzes Schema & RLS Policies
+This table provides metadata for both files and links uploaded or managed in the bootcamp learning platform. Each row references either a URL (for links) or a storage-managed file (for uploads), with strong integrity, owner-based access, and security by default.
 
-## Schema Overview Diagram (Textual)
-- `quizzes`: Each quiz for a course (linked via course_id, owned by instructor)
-- `quiz_questions`: Questions belonging to a quiz
-- `quiz_attempts`: Student attempts at a quiz, stores answers, score, and status
+### SQL: Table Definition, Indexes, Constraints, RLS
 
-Relations:
-- `quizzes.course_id` → `courses.id`
-- `quizzes.created_by` → `auth.users.id`
-- `quiz_questions.quiz_id` → `quizzes.id`
-- `quiz_attempts.quiz_id` → `quizzes.id`
-- `quiz_attempts.student_id` → `auth.users.id`
-
-## Migration SQL (run in Supabase SQL editor or use migration tools):
+Use the following SQL in the Supabase SQL Editor or `psql` to create the table, constraints, indexes, and policies.
 
 ```sql
--- (Omitted for brevity, see previous content for schema and policy details)
+-- 1. Enable required extension for trigram search
+create extension if not exists pg_trgm;
+
+-- 2. ENUM type for resource kind
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'bootcamp_resource_type') then
+    create type bootcamp_resource_type as enum ('link', 'file');
+  end if;
+end
+$$;
+
+-- 3. Table definition
+create table if not exists public.bootcamp_resources (
+    id uuid primary key default gen_random_uuid(),
+    owner_id uuid not null references auth.users on delete cascade,
+    title text not null check (length(trim(title)) > 0),
+    type bootcamp_resource_type not null,
+    url text null,
+    storage_path text null,
+    original_name text not null,
+    mime_type text not null,
+    size_bytes bigint not null check (size_bytes >= 0),
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    -- Enforce: links have url, no storage_path; files have storage_path, no url
+    constraint valid_type_fields
+      check (
+        (type = 'link' and url is not null and storage_path is null)
+        or
+        (type = 'file' and url is null and storage_path is not null)
+      )
+);
+
+-- 4. Indexes for performance & search
+create index if not exists idx_bootcamp_resources_owner_id on public.bootcamp_resources(owner_id);
+create index if not exists idx_bootcamp_resources_type on public.bootcamp_resources(type);
+create index if not exists idx_bootcamp_resources_created_at on public.bootcamp_resources(created_at desc);
+
+-- Case-insensitive, fast search for titles & original names
+create index if not exists gin_bootcamp_resources_title_trgm on public.bootcamp_resources using gin (title gin_trgm_ops);
+create index if not exists gin_bootcamp_resources_original_name_trgm on public.bootcamp_resources using gin (original_name gin_trgm_ops);
+
+-- 5. Row Level Security (RLS) - enable and define policies
+alter table public.bootcamp_resources enable row level security;
+
+-- Owners can: SELECT, INSERT, UPDATE, DELETE their own resources
+create policy "Allow owner full CRUD" on public.bootcamp_resources
+  for all
+  using (auth.uid() = owner_id)
+  with check (auth.uid() = owner_id);
+
+-- By default: deny all other access (implicit)
+
+-- OPTIONAL: Allow public SELECT for resources of type='link'
+create policy "Allow public read for public links" on public.bootcamp_resources
+  for select
+  using (
+    type = 'link'
+    and (url is not null and storage_path is null)
+    -- You may add more conditions for truly public links, such as a separate is_public boolean
+  );
 ```
 
-## RLS/Policy Rationale
+> **NOTE:** Adjust the optional public read policy if you do **not** want public links to be universally readable.
 
-- **Quizzes/questions:** Only instructors for the course can insert/update/delete. Students/enrolled users can `SELECT` published quizzes/questions.
-- **Quiz attempts:** Only the student and instructor can `SELECT`. Only the owning student can insert/update.
-- Uses `auth.uid()` for secure, fine-grained enforcement.
+------------
+## Storage Bucket: `bootcamp-resources`
 
-## Example Usage: Frontend JS Integration
+- **Required**: A storage bucket named `bootcamp-resources` must exist in Supabase Storage.
+    - Go to _Storage → Create bucket_ if not present.
+    - Set "public" or "private" permissions **as desired**. For most use-cases, files should be _private_, unless you want to allow public downloads.
+    - List/download/upload permissions should be bound by RLS on metadata or Supabase storage policy.
 
-**Reference environment variables:**  
-Connect via `REACT_APP_SUPABASE_URL` and `REACT_APP_SUPABASE_KEY` (see `.env`).
+------------
+## Integration Notes
 
----
+### 1. Metadata CRUD
 
-### Bootcamp Resources
+- Use `supabase.from('bootcamp_resources')` for querying resource metadata—respecting RLS for owner-based access.
+- For link resources: populate `url`, leave `storage_path` null; for file uploads: store Supabase Storage key in `storage_path` and leave `url` null.
+- The React hook `useBootcampResources` should:
+    - `select` to fetch the authenticated user's resources (or, if public read is allowed, fetch links as guest).
+    - `insert`, `update`, `delete` require the authenticated user's ID as `owner_id` (auto-filled on frontend).
+    - Handle `type`-based depopulation of `url` or `storage_path` at insert/update.
+    - When uploading new files:
+        - Upload the binary to the `bootcamp-resources` bucket.
+        - Populate `storage_path` with the resulting storage key (_e.g., `${userId}/${filename}`_).
+        - Save all metadata fields per schema.
 
-- Bucket: `bootcamp-resources`
-  - Store all Bootcamp file uploads, path format: `{owner_id}/{timestamp}-{filename}`.
-- Table: `bootcamp_resources`
-  - Columns: id (uuid), owner_id (uuid or text), title (text), type ('file'|'link'), url (text), storage_path (text), original_name (text), mime_type (text), size_bytes (int), created_at (timestamp).
-- Allow both students and instructors to add. Mark owner_id for each file upload or link.
-- Grant R/W access for users (students/instructors) on both bucket and table.
-- Non-Supabase fallback: store metadata in localStorage, do not persist actual files.
-- All interaction should be through the `useBootcampResources` React hook in the frontend.
+### 2. File Serving
 
+- To serve/download a file:
+    - Query the metadata (`bootcamp_resources`) to validate access and obtain the correct `storage_path`.
+    - Fetch/download the file from Supabase Storage only if the user is authorized.
+
+- For links, redirect the user via the `url` field.
+
+### 3. Owner-based Authorization
+
+- All operations are secured-by-default; users only see/update/delete their own resources.
+
+- For admin use (if needed): create a separate admin role or call Supabase with elevated privileges.
+
+### 4. Optional: Public Links
+
+- To allow some resources to be truly public, add an `is_public boolean default false` column, and add to the public SELECT policy:
+    ```sql
+    -- (add this column in table definition)
+    is_public boolean not null default false,
+
+    -- Update policy:
+    create policy "Allow public read for is_public links" on public.bootcamp_resources
+      for select
+      using (
+        is_public = true
+        and type = 'link'
+        and (url is not null and storage_path is null)
+      );
+    ```
+
+------------
+## Testing RLS
+
+**Tip:** Use the Supabase Table Editor and Auth emulator to check that:
+- Owners can see, insert, update, and delete their own records.
+- Other users cannot read/update/delete others' resources (unless public policy is enabled for links).
+- Public/guest access only works for rows allowed by explicit public policy.
+
+------------
+## Versioning & Compatibility
+
+- If migrating old data, ensure ENUMs and new constraints match the data shape.
+- All new frontend and API code must handle all enforced schema constraints!
+
+------------
+
+## Reference
+
+- Table: `public.bootcamp_resources`
+- Storage: `bootcamp-resources` bucket
+- Frontend usage: via `useBootcampResources` React hook (see `/src/hooks/useBootcampResources.js`)
