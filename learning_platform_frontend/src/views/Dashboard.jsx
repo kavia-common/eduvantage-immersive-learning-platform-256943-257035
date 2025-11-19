@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState, useEffect } from "react";
+import React, { useContext, useMemo, useState } from "react";
 import "../styles/dashboard.css";
 import { AuthContext } from "../auth/AuthProvider";
 import useProfileRole from "../auth/useProfileRole";
@@ -10,9 +10,10 @@ import Loader from "../components/common/Loader";
 import BootcampResourceModal from "../components/bootcamp/BootcampResourceModal";
 import BootcampResourcesList from "../components/bootcamp/BootcampResourcesList.jsx";
 
+// Modal for quick course actions (used for Bootcamp, not for quizzes)
 function QuickActionCourseModal({ courses, isOpen, onClose, onSelect }) {
   const [focusedIdx, setFocusedIdx] = useState(0);
-  useEffect(() => {
+  React.useEffect(() => {
     if (!isOpen) return;
     function down(e) {
       if (e.key === "ArrowDown") {
@@ -127,14 +128,14 @@ function Dashboard() {
     error: coursesError,
   } = useInstructorCourses(role === "instructor" ? userId : null);
 
-  // Student enrollments for quizzes
+  // Student enrollments
   const {
     enrollments = [],
     loading: enrollmentsLoading,
     error: enrollmentsError,
   } = useUserEnrollments(role === "student" ? userId : null);
 
-  // Modal state for instructor multi-course selection
+  // Modal state for instructor multi-course selection (e.g. for alternate quick actions, not used for quiz anymore)
   const [modalOpen, setModalOpen] = useState(false);
 
   // Ocean Professional theme palette
@@ -144,48 +145,20 @@ function Dashboard() {
   const defaultCourse = useMemo(() =>
     (courses && courses.length > 0 ? courses[0] : null), [courses]
   );
-  const mostRecentEnrollment = useMemo(() =>
-    (enrollments && enrollments.length > 0 ? enrollments[0] : null), [enrollments]
-  );
-
-  // Instructor: Quick create quiz
-  const handleQuickAction = () => {
-    if (!courses || courses.length === 0) return;
-    if (courses.length === 1) {
-      navigate(`/instructor/courses/${courses[0].id}/quizzes/new`);
-    } else {
-      setModalOpen(true);
-    }
-  };
-  const handleSelectCourse = (course) => {
-    setModalOpen(false);
-    if (course && course.id) navigate(`/instructor/courses/${course.id}/quizzes/new`);
-  };
-  const handleCreateCourse = () => {
-    navigate("/instructor/courses/new");
-  };
-  // Student: Take quiz for most recent enrollment
-  const handleTakeQuiz = () => {
-    if (!enrollments || enrollments.length === 0) return;
-    const enrollment = enrollments[0];
-    if (enrollment && enrollment.course_id) {
-      navigate(`/courses/${enrollment.course_id}/quiz`);
-    }
-  };
 
   // Bootcamp modal state
   const [showBootcampModal, setShowBootcampModal] = useState(false);
-
-  // Only visible for instructors
-  const showInstructorQuickAction = role === "instructor" && !roleLoading;
-  // Only visible for students
-  const showStudentQuickAction = role === "student" && !roleLoading;
 
   // For Bootcamp modal: derive currentUser
   const currentUser = auth?.user || null;
 
   // Support refreshing Resources list after add
   const [resourcesListRefresh, setResourcesListRefresh] = useState(0);
+
+  // Instructor: quick action - create course (previously 'create quiz')
+  const handleCreateCourse = () => {
+    navigate("/instructor/courses/new");
+  };
 
   return (
     <div className="dashboard-container">
@@ -233,7 +206,8 @@ function Dashboard() {
 
       <h1>Dashboard</h1>
 
-      {showInstructorQuickAction && (
+      {/* Instructor: Offer quick create course if no course */}
+      {(role === "instructor" && !roleLoading) && (
         <div
           className="dashboard-quickaction"
           style={{
@@ -249,7 +223,7 @@ function Dashboard() {
             position: "relative",
             maxWidth: 520,
           }}
-          aria-label="Instructor quick action: Create quiz"
+          aria-label="Instructor quick action: Create course"
         >
           <span
             style={{
@@ -258,10 +232,10 @@ function Dashboard() {
               fontSize: "1.18rem",
             }}
           >
-            Create a Quiz for Your Course
+            Create a Course
           </span>
           <span style={{ color: "#374151", fontSize: 15, margin: "8px 0 15px 0" }}>
-            Build engaging quizzes to boost student learning.
+            Start teaching by creating your first course.
           </span>
           {coursesLoading && (
             <div style={{ margin: "12px 0" }}>
@@ -283,51 +257,7 @@ function Dashboard() {
           )}
           {!coursesLoading && !coursesError && (
             <>
-              {courses.length > 0 ? (
-                <>
-                  <Button
-                    aria-label="Quick create quiz"
-                    style={{
-                      background: colorPrimary,
-                      color: "#fff",
-                      borderRadius: 8,
-                      fontWeight: 600,
-                      fontSize: 16,
-                      padding: "0.85rem 2.2rem",
-                      marginRight: 14,
-                      transition: "all 0.18s",
-                      outline: "none",
-                      boxShadow: "0px 1.5px 0.5px rgba(37,99,235,0.08)"
-                    }}
-                    onClick={handleQuickAction}
-                    onKeyDown={e => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        handleQuickAction();
-                      }
-                    }}
-                  >
-                    {courses.length === 1
-                      ? `Create Quiz for "${courses[0].title || courses[0].name || 'Untitled'}"`
-                      : `Create Quiz for Course`}
-                  </Button>
-                  {courses.length > 1 && (
-                    <span style={{ marginTop: 9, fontSize: 13, color: "#5B6471" }}>
-                      Most recent course: <span style={{ color: colorAccent }}>{defaultCourse.title || defaultCourse.name}</span>
-                      {" "}(<button
-                        onClick={() => setModalOpen(true)}
-                        style={{ marginLeft: 8, background: "none", border: "none", color: colorPrimary, textDecoration: "underline", cursor: "pointer", fontSize: 13, fontWeight: 500 }}
-                        aria-label="Select a different course"
-                      >choose another</button>)
-                    </span>
-                  )}
-                  <QuickActionCourseModal
-                    courses={courses}
-                    isOpen={modalOpen}
-                    onClose={() => setModalOpen(false)}
-                    onSelect={handleSelectCourse}
-                  />
-                </>
-              ) : (
+              {courses.length === 0 && (
                 <div style={{ margin: "12px 0" }}>
                   <span style={{ color: "#EF4444", fontWeight: 500, marginRight: 10 }}>
                     You have no courses yet.
@@ -347,79 +277,6 @@ function Dashboard() {
                     Create Course
                   </Button>
                 </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
-
-      {showStudentQuickAction && (
-        <div
-          className="dashboard-quickaction"
-          style={{
-            marginTop: 24,
-            marginBottom: 24,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
-            background: "linear-gradient(90deg,#2563EB0F,#F9FAFB 80%)",
-            padding: "1.5rem 2rem",
-            borderRadius: 16,
-            boxShadow: "0 2px 10px rgba(37,99,235,0.06)",
-            position: "relative",
-            maxWidth: 520,
-          }}
-          aria-label="Student quick action: Take quiz"
-        >
-          <span style={{ color: colorPrimary, fontWeight: 600, fontSize: "1.18rem" }}>
-            Take a Quiz
-          </span>
-          <span style={{ color: "#374151", fontSize: 15, margin: "8px 0 15px 0" }}>
-            Ready to test your knowledge? Jump right in!
-          </span>
-          {enrollmentsLoading && (
-            <div style={{ margin: "12px 0" }}>
-              <Loader size="sm" />
-              <span style={{ marginLeft: 9, color: "#666" }}>Loading enrollments...</span>
-            </div>
-          )}
-          {enrollmentsError && (
-            <div style={{
-              background: "#FEF2F2",
-              color: "#B91C1C",
-              padding: "8px 14px",
-              borderRadius: 6,
-              fontSize: 14,
-              marginBottom: 8
-            }}>
-              Error: {enrollmentsError}
-            </div>
-          )}
-          {!enrollmentsLoading && !enrollmentsError && (
-            <>
-              {enrollments && enrollments.length > 0 ? (
-                <Button
-                  aria-label="Take quiz for most recent course"
-                  style={{
-                    background: colorAccent,
-                    color: "#fff",
-                    borderRadius: 8,
-                    fontWeight: 600,
-                    fontSize: 16,
-                    padding: "0.85rem 2.2rem",
-                  }}
-                  onClick={handleTakeQuiz}
-                  tabIndex={0}
-                >
-                  {mostRecentEnrollment?.course_title
-                    ? `Take Quiz for "${mostRecentEnrollment.course_title}"`
-                    : "Take Quiz"
-                  }
-                </Button>
-              ) : (
-                <span style={{ color: "#EF4444", fontWeight: 500 }}>
-                  You’re not enrolled in any courses yet. Browse courses to get started!
-                </span>
               )}
             </>
           )}

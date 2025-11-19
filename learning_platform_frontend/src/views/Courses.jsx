@@ -6,7 +6,6 @@ import { CourseOverview } from '../components/courses/CourseOverview';
 import { CourseCurriculum } from '../components/courses/CourseCurriculum';
 import { CourseInstructor } from '../components/courses/CourseInstructor';
 import { CourseAssignments } from '../components/courses/CourseAssignments';
-import { CourseQuizzes } from '../components/courses/CourseQuizzes';
 import { CourseResources } from '../components/courses/CourseResources';
 import { CourseCard } from '../components/courses/CourseCard';
 import Button from '../components/common/Button';
@@ -144,7 +143,6 @@ const TABS = [
   { key: 'curriculum', label: 'Curriculum' },
   { key: 'instructor', label: 'Instructor' },
   { key: 'assignments', label: 'Assignments' },
-  { key: 'quizzes', label: 'Quizzes' },
   { key: 'resources', label: 'Resources' },
 ];
 
@@ -372,8 +370,6 @@ export default function Courses({ coursesData: overrideData }) {
         return <CourseInstructor course={selected} />;
       case 'assignments':
         return <CourseAssignments course={selected} />;
-      case 'quizzes':
-        return <CourseQuizzes course={selected} />;
       case 'resources':
         return <CourseResources course={selected} />;
       default:

@@ -4,7 +4,6 @@ import { CourseOverview } from '../components/courses/CourseOverview';
 import { CourseCurriculum } from '../components/courses/CourseCurriculum';
 import { CourseInstructor } from '../components/courses/CourseInstructor';
 import { CourseAssignments } from '../components/courses/CourseAssignments';
-import { CourseQuizzes } from '../components/courses/CourseQuizzes';
 import { CourseResources } from '../components/courses/CourseResources';
 import Button from '../components/common/Button';
 import { useAuth } from '../auth/AuthProvider';
@@ -33,7 +32,6 @@ function CourseDetailPage() {
     { key: 'curriculum', label: 'Curriculum' },
     { key: 'instructor', label: 'Instructor' },
     { key: 'assignments', label: 'Assignments' },
-    { key: 'quizzes', label: 'Quizzes' },
     { key: 'resources', label: 'Resources' },
   ]), []);
 
@@ -149,7 +147,6 @@ function CourseDetailPage() {
         {activeTab === 'curriculum' && <CourseCurriculum course={course} />}
         {activeTab === 'instructor' && <CourseInstructor course={course} />}
         {activeTab === 'assignments' && <CourseAssignments course={course} />}
-        {activeTab === 'quizzes' && <CourseQuizzes course={course} />}
         {activeTab === 'resources' && <CourseResources course={course} />}
       </div>
 

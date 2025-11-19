@@ -1,5 +1,9 @@
 # Supabase Schema & RLS for Bootcamp Resources Management
 
+---
+**Deprecation Notice:**  
+As of May 2024, the learning platform frontend no longer exposes or references quiz features (creation, editing, quick actions, or quiz-taking UI) in the user interface. Quiz tables may remain in the Supabase schema for legacy or backend use, but the frontend has fully deprecated quiz integration.
+
 ## Table: `bootcamp_resources`
 
 This table provides metadata for both files and links uploaded or managed in the bootcamp learning platform. Each row references either a URL (for links) or a storage-managed file (for uploads), with strong integrity, owner-based access, and security by default.
