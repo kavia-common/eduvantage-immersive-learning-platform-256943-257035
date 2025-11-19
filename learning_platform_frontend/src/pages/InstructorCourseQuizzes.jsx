@@ -1,104 +1,113 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { useProfileRole } from "../auth/useProfileRole";
-import { Box, Heading, Button, Spinner, Card, Text, HStack, Tag } from "@chakra-ui/react";
-import { createClient } from "@supabase/supabase-js";
+import { Link, useParams } from "react-router-dom";
+import useProfileRole from "../auth/useProfileRole";
+import { useInstructorCourses } from "../hooks/useInstructorCourses";
+import { apiClient } from "../services/apiClient";
+import "../styles/dashboard.css";
 
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_KEY
-);
-
-export default function InstructorCourseQuizzes() {
+/**
+ * Shows quizzes for a specific instructor course, with options to create or edit.
+ */
+const InstructorCourseQuizzes = () => {
   const { courseId } = useParams();
-  const navigate = useNavigate();
-  const { role, loading: roleLoading } = useProfileRole();
+  const { role } = useProfileRole();
+  const { courses, loading: coursesLoading } = useInstructorCourses();
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [fetchError, setFetchError] = useState("");
+
+  const thisCourse =
+    courses && Array.isArray(courses)
+      ? courses.find((c) => String(c.id) === String(courseId))
+      : null;
 
   useEffect(() => {
-    if (!roleLoading && role !== "instructor") {
-      navigate("/notfound", { replace: true });
-    }
-  }, [role, roleLoading, navigate]);
-
-  useEffect(() => {
-    if (!courseId) return;
+    let active = true;
     setLoading(true);
-    supabase
-      .from("quizzes")
-      .select("*")
-      .eq("course_id", courseId)
-      .order("created_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (error) {
-          setError("Failed to load quizzes");
-        } else {
-          setQuizzes(data ?? []);
+    setFetchError("");
+    apiClient
+      .get(`/courses/${courseId}/quizzes`)
+      .then((response) => {
+        if (active) {
+          setQuizzes(Array.isArray(response.data) ? response.data : []);
+          setLoading(false);
         }
-        setLoading(false);
+      })
+      .catch((err) => {
+        if (active) {
+          setFetchError("Failed to load quizzes for course.");
+          setLoading(false);
+        }
       });
+    return () => {
+      active = false;
+    };
   }, [courseId]);
 
-  if (roleLoading || loading) {
+  if (!role || role !== "instructor") {
     return (
-      <Box p={12} textAlign="center">
-        <Spinner size="xl" />
-      </Box>
+      <div className="dashboard-card" style={{ maxWidth: 560, margin: "2em auto" }}>
+        <h2 className="dashboard-form-title">Instructor Access Required</h2>
+        <div className="text-muted">Only instructors can manage course quizzes.</div>
+      </div>
     );
   }
-  if (error) {
-    return (
-      <Box p={12} textAlign="center" color="red.500">
-        {error}
-      </Box>
-    );
-  }
+
   return (
-    <Box maxW="900px" m="0 auto" py={6} px={4}>
-      <HStack mb={2}>
-        <Heading size="lg" color="blue.700">
-          Course Quizzes
-        </Heading>
-        <Button
-          as={Link}
-          to={`/instructor/courses/${courseId}/quizzes/new`}
-          colorScheme="blue"
-          ml="auto"
+    <section className="dashboard-main dashboard-card" style={{ margin: "2em auto", maxWidth: 800 }}>
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1 className="dashboard-form-title" style={{ margin: 0 }}>
+          Quizzes for {thisCourse ? thisCourse.title : "Course"}
+        </h1>
+        <Link
+          to={`/instructor/courses/${courseId}/quizzes/create`}
+          className="btn-primary"
+          style={{ marginLeft: 24 }}
         >
-          Create Quiz
-        </Button>
-      </HStack>
-      {quizzes.length === 0 ? (
-        <Text color="gray.500" mt={8}>No quizzes found for this course.</Text>
+          + New Quiz
+        </Link>
+      </header>
+      {loading || coursesLoading ? (
+        <div style={{ padding: "1.5em 0" }} aria-busy="true">
+          Loading quizzes...
+        </div>
+      ) : fetchError ? (
+        <div className="form-error" role="alert">{fetchError}</div>
+      ) : quizzes.length === 0 ? (
+        <div style={{ padding: "1.5em 0" }} className="text-muted">
+          No quizzes for this course yet.
+        </div>
       ) : (
-        quizzes.map((quiz) => (
-          <Card key={quiz.id} mb={4} p={4} bg="white" borderRadius="lg" boxShadow="md">
-            <HStack justify="space-between">
-              <Box>
-                <Text fontWeight="bold" fontSize="lg">{quiz.title}</Text>
-                <Text color="gray.600" fontSize="sm" maxW="500px">{quiz.description}</Text>
-                <Text fontSize="sm" color="gray.500">
-                  Time Limit: {quiz.time_limit} min
-                </Text>
-                {quiz.published ? (
-                  <Tag colorScheme="green" size="sm" mt={1}>Published</Tag>
-                ) : (
-                  <Tag colorScheme="gray" size="sm" mt={1}>Draft</Tag>
-                )}
-              </Box>
-              <Button
-                as={Link}
-                to={`/instructor/courses/${courseId}/quizzes/${quiz.id}/edit`}
-                colorScheme="yellow"
-              >
-                Edit
-              </Button>
-            </HStack>
-          </Card>
-        ))
+        <table className="dashboard-table" style={{ width: "100%", marginTop: 20 }}>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Description</th>
+              <th>Questions</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {quizzes.map((quiz) => (
+              <tr key={quiz.id}>
+                <td>{quiz.title}</td>
+                <td>{quiz.description}</td>
+                <td>{Array.isArray(quiz.questions) ? quiz.questions.length : "N/A"}</td>
+                <td>
+                  <Link
+                    to={`/instructor/courses/${courseId}/quizzes/${quiz.id}/edit`}
+                    className="btn-small btn-primary"
+                  >
+                    Edit
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
-    </Box>
+    </section>
   );
-}
+};
+
+export default InstructorCourseQuizzes;

@@ -1,98 +1,135 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import useProfileRole from "../auth/useProfileRole";
 import QuizForm from "../components/quizzes/QuizForm";
-import { useProfileRole } from "../auth/useProfileRole";
-import { Box, Spinner } from "@chakra-ui/react";
-import { createClient } from "@supabase/supabase-js";
+import { apiClient } from "../services/apiClient";
+import "../styles/dashboard.css";
 
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_KEY
-);
+const DEFAULT_SUCCESS_TIMEOUT = 1800;
 
-export default function InstructorQuizEdit() {
+/**
+ * Page to edit an existing quiz for a course.
+ */
+const InstructorQuizEdit = () => {
+  const { role } = useProfileRole();
   const { courseId, quizId } = useParams();
-  const { role, loading: loadingRole } = useProfileRole();
-  const [loading, setLoading] = useState(true);
-  const [quiz, setQuiz] = useState(null);
-  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
+  const [initialQuiz, setInitialQuiz] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState("");
+  const [showModal, setShowModal] = useState(false);
+
   useEffect(() => {
-    async function fetchQuiz() {
-      setLoading(true);
-      // Fetch quiz
-      const { data, error } = await supabase
-        .from("quizzes")
-        .select("*")
-        .eq("id", quizId)
-        .single();
-      if (error || !data || data.course_id !== courseId) {
-        setQuiz(null);
-        setLoading(false);
-        return;
-      }
-      // Fetch questions
-      const { data: questions, error: qerr } = await supabase
-        .from("quiz_questions")
-        .select("*")
-        .eq("quiz_id", quizId)
-        .order("order", { ascending: true });
-      setQuiz({
-        ...data,
-        questions: questions || [],
-      });
+    setLoading(true);
+    setApiError("");
+    apiClient
+      .get(`/courses/${courseId}/quizzes/${quizId}`)
+      .then((response) => {
+        setInitialQuiz(response.data || {});
+      })
+      .catch(() => {
+        setApiError("Quiz not found.");
+      })
+      .finally(() => setLoading(false));
+  }, [courseId, quizId]);
+
+  const handleSubmit = async (values) => {
+    setApiError("");
+    setLoading(true);
+    try {
+      await apiClient.put(`/courses/${courseId}/quizzes/${quizId}`, values);
+      setShowModal(true);
+      setTimeout(() => {
+        setShowModal(false);
+        navigate(`/instructor/courses/${courseId}/quizzes`);
+      }, DEFAULT_SUCCESS_TIMEOUT);
+    } catch (err) {
+      setApiError(
+        err.response && err.response.data && err.response.data.message
+          ? err.response.data.message
+          : "Failed to update quiz."
+      );
+    } finally {
       setLoading(false);
     }
-    if (quizId) fetchQuiz();
-  }, [quizId, courseId]);
-
-  if (loadingRole || loading) return <Spinner p={10} />;
-  if (role !== "instructor")
-    return <Box p={8} color="red.500">Access denied. Instructors only.</Box>;
-  if (!quiz)
-    return <Box p={8} color="red.500">Quiz not found or inaccessible.</Box>;
-
-  const handleSave = async (nextQuiz) => {
-    setSaving(true);
-    // Update quiz
-    const { title, description, published, time_limit, questions } = nextQuiz;
-    const { error: quizErr } = await supabase
-      .from("quizzes")
-      .update({
-        title,
-        description,
-        published,
-        time_limit,
-      })
-      .eq("id", quizId);
-    if (quizErr) throw quizErr;
-    // Replace questions for simplicity
-    await supabase.from("quiz_questions").delete().eq("quiz_id", quizId);
-    const questionsInsert = questions.map((q, idx) => ({
-      quiz_id: quizId,
-      text: q.text,
-      type: q.type,
-      options: q.options,
-      correct_answers: q.correct_answers,
-      points: q.points,
-      order: idx + 1,
-    }));
-    const { error: qErr } = await supabase.from("quiz_questions").insert(questionsInsert);
-    if (qErr) throw qErr;
-    navigate(`/instructor/courses/${courseId}/quizzes`);
   };
 
+  if (!role || role !== "instructor") {
+    return (
+      <div className="dashboard-card" style={{ maxWidth: 560, margin: "2em auto" }}>
+        <h2>Instructor Access Required</h2>
+        <div className="text-muted">Only instructors can edit quizzes.</div>
+      </div>
+    );
+  }
+
   return (
-    <Box maxW="900px" m="0 auto" p={8}>
-      <QuizForm
-        initialQuiz={quiz}
-        onSave={handleSave}
-        onCancel={() => navigate(`/instructor/courses/${courseId}/quizzes`)}
-        loading={saving}
-        isEdit={true}
-        allowPublish={true}
-      />
-    </Box>
+    <section className="dashboard-main dashboard-card" style={{ maxWidth: 640, margin: "2em auto" }}>
+      <h1 className="dashboard-form-title">Edit Quiz</h1>
+      {loading ? (
+        <div style={{ padding: 32 }}>Loading quiz...</div>
+      ) : initialQuiz ? (
+        <QuizForm
+          initialQuiz={initialQuiz}
+          onSubmit={handleSubmit}
+          loading={loading}
+          error={apiError}
+        />
+      ) : (
+        <div className="form-error" role="alert">
+          {apiError || "Quiz could not be loaded."}
+        </div>
+      )}
+      {showModal && (
+        <div
+          className="modal-overlay"
+          tabIndex={-1}
+          aria-modal="true"
+          role="dialog"
+          style={{
+            position: "fixed",
+            left: 0,
+            top: 0,
+            zIndex: 11001,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(33,42,58,0.38)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <div
+            className="modal-content"
+            style={{
+              background: "#fff",
+              borderRadius: 10,
+              padding: "2em 2.5em",
+              minWidth: 260,
+              boxShadow: "0 8px 28px rgba(0,0,0,0.13)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+            role="document"
+            aria-label="Quiz updated success dialog"
+          >
+            <div style={{ fontSize: "1.1em", marginBottom: 20, color: "#2563EB" }}>
+              Quiz updated successfully!
+            </div>
+            <button
+              className="btn-primary"
+              onClick={() => navigate(`/instructor/courses/${courseId}/quizzes`)}
+              style={{ marginTop: 10 }}
+            >
+              Go to Quizzes
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
   );
-}
+};
+
+export default InstructorQuizEdit;
